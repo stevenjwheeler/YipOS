@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <deque>
+#include <cstdint>
 
 struct GLFWwindow;
 
@@ -29,13 +30,22 @@ public:
     void AddLogLine(const std::string& line);
 
     void SetConfigPath(const std::string& path) { config_path_ = path; }
+    void SetAssetsPath(const std::string& path) { assets_path_ = path; }
 
 private:
     void RenderStatusTab(PDAController& pda, OSCManager& osc);
+    void RenderScreenPreview(PDAController& pda);
     void RenderConfigTab(PDAController& pda, Config& config);
     void RenderLogTab();
 
+    bool LoadMacroAtlas(const std::string& path);
+    void HandlePreviewClick(PDAController& pda, float nx, float ny);
+
     GLFWwindow* window_ = nullptr;
+
+    // Macro atlas texture
+    uint32_t macro_atlas_tex_ = 0;
+    bool macro_atlas_loaded_ = false;
 
     // Log circular buffer
     std::deque<std::string> log_lines_;
@@ -44,6 +54,7 @@ private:
 
     // Config state path (for save/load)
     std::string config_path_;
+    std::string assets_path_;
 };
 
 } // namespace YipOS

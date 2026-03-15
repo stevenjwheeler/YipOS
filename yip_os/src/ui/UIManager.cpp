@@ -13,8 +13,14 @@
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
+
 #include <cstdio>
 #include <chrono>
+#include <algorithm>
+#include <filesystem>
 
 namespace YipOS {
 
@@ -63,12 +69,23 @@ bool UIManager::Initialize(const std::string& title) {
     ImGui_ImplGlfw_InitForOpenGL(window_, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
+    // Try to load macro atlas from assets path
+    if (!assets_path_.empty()) {
+        LoadMacroAtlas(assets_path_ + "/WilliamsTube_MacroAtlas.png");
+    }
+
     Logger::Info("UI initialized: " + title);
     return true;
 }
 
 void UIManager::Shutdown() {
     if (!window_) return;
+
+    if (macro_atlas_tex_) {
+        glDeleteTextures(1, &macro_atlas_tex_);
+        macro_atlas_tex_ = 0;
+        macro_atlas_loaded_ = false;
+    }
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
@@ -141,6 +158,37 @@ void UIManager::AddLogLine(const std::string& line) {
     log_lines_.push_back(line);
 }
 
+// --- Atlas Loading ---
+
+bool UIManager::LoadMacroAtlas(const std::string& path) {
+    int w, h, channels;
+    unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 1);
+    if (!data) {
+        Logger::Warning("Could not load macro atlas: " + path);
+        return false;
+    }
+
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, w, h, 0, GL_RED, GL_UNSIGNED_BYTE, data);
+
+    // Swizzle so single-channel reads as (R,R,R,R) — white foreground
+    GLint swizzle[] = {GL_RED, GL_RED, GL_RED, GL_RED};
+    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+
+    stbi_image_free(data);
+
+    macro_atlas_tex_ = tex;
+    macro_atlas_loaded_ = true;
+    Logger::Info("Macro atlas loaded: " + path + " (" + std::to_string(w) + "x" + std::to_string(h) + ")");
+    return true;
+}
+
 // --- Tab Implementations ---
 
 void UIManager::RenderStatusTab(PDAController& pda, OSCManager& osc) {
@@ -151,40 +199,112 @@ void UIManager::RenderStatusTab(PDAController& pda, OSCManager& osc) {
 
     Screen* current = pda.GetCurrentScreen();
     std::string screen_name = current ? current->name : "NONE";
-
-    ImGui::Text("Current Screen: %s", screen_name.c_str());
-    ImGui::Text("Stack Depth: %d", pda.GetScreenStackDepth());
-    ImGui::Text("Spinner: %c", pda.GetSpinnerChar());
-
     int remaining = pda.GetDisplay().BufferedRemaining();
-    if (remaining > 0) {
-        ImGui::Text("Buffered Writes: %d", remaining);
-    } else {
-        ImGui::Text("Buffered Writes: idle");
-    }
-
-    std::string last = pda.GetLastInput();
-    if (!last.empty()) {
-        ImGui::Text("Last Input: %s", last.c_str());
-    }
+    ImGui::Text("Screen: %s  Writes: %d", screen_name.c_str(), remaining);
 
     ImGui::Separator();
 
-    // Screen buffer dump
-    if (ImGui::CollapsingHeader("Screen Buffer", ImGuiTreeNodeFlags_DefaultOpen)) {
-        std::string dump = pda.GetDisplay().GetScreen().Dump();
-        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]); // monospace
-        ImGui::TextUnformatted(dump.c_str());
-        ImGui::PopFont();
+    // --- Side-by-side: touch preview (left) + screen buffer (right) ---
+    RenderScreenPreview(pda);
+
+    ImGui::Separator();
+
+    // OSC incoming
+    ImGui::Text("OSC Incoming");
+    ImGui::BeginChild("OSCRecv", ImVec2(0, 0), true);
+    auto recvs = osc.GetRecentRecvs();
+    for (auto it = recvs.rbegin(); it != recvs.rend() && std::distance(recvs.rbegin(), it) < 20; ++it) {
+        ImGui::Text("  %s = %.2f", it->path.c_str(), it->value);
+    }
+    ImGui::EndChild();
+}
+
+void UIManager::RenderScreenPreview(PDAController& pda) {
+    Screen* current = pda.GetCurrentScreen();
+    int macro_index = current ? current->macro_index : -1;
+
+    float preview_size = 200.0f;
+    ImVec2 img_size(preview_size, preview_size);
+
+    // Left column: touch preview + nav buttons
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("Touch Preview (click to input)");
+
+    if (macro_atlas_loaded_ && macro_index >= 0) {
+        int grid_col = macro_index % 8;
+        int grid_row = macro_index / 8;
+        ImVec2 uv0(grid_col / 8.0f, grid_row / 8.0f);
+        ImVec2 uv1((grid_col + 1) / 8.0f, (grid_row + 1) / 8.0f);
+        ImVec4 tint(0.2f, 1.0f, 0.4f, 1.0f);
+        ImVec4 bg(0.0f, 0.0f, 0.0f, 1.0f);
+        ImGui::Image(
+            reinterpret_cast<ImTextureID>(static_cast<uintptr_t>(macro_atlas_tex_)),
+            img_size, uv0, uv1, tint, bg);
+    } else {
+        ImVec2 cursor = ImGui::GetCursorScreenPos();
+        ImGui::GetWindowDrawList()->AddRectFilled(
+            cursor, ImVec2(cursor.x + img_size.x, cursor.y + img_size.y),
+            IM_COL32(0, 0, 0, 255));
+        ImGui::Dummy(img_size);
     }
 
-    // Recent OSC receives
-    if (ImGui::CollapsingHeader("OSC Incoming")) {
-        auto recvs = osc.GetRecentRecvs();
-        for (auto it = recvs.rbegin(); it != recvs.rend() && std::distance(recvs.rbegin(), it) < 20; ++it) {
-            ImGui::Text("  %s = %.2f", it->path.c_str(), it->value);
-        }
+    // Handle clicks on the preview
+    if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0)) {
+        ImVec2 mouse = ImGui::GetMousePos();
+        ImVec2 rect_min = ImGui::GetItemRectMin();
+        ImVec2 rect_size = ImGui::GetItemRectSize();
+        float nx = (mouse.x - rect_min.x) / rect_size.x;
+        float ny = (mouse.y - rect_min.y) / rect_size.y;
+        HandlePreviewClick(pda, nx, ny);
     }
+
+    // Nav buttons
+    if (ImGui::Button("HOME")) pda.QueueInput("TL");
+    ImGui::SameLine();
+    if (ImGui::Button("BACK")) pda.QueueInput("ML");
+
+    ImGui::EndGroup();
+
+    // Right column: screen buffer text
+    ImGui::SameLine();
+
+    ImGui::BeginGroup();
+    ImGui::TextDisabled("Screen Buffer (dynamic text)");
+    std::string dump = pda.GetDisplay().GetScreen().Dump();
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts[0]);
+    ImGui::TextUnformatted(dump.c_str());
+    ImGui::PopFont();
+    ImGui::EndGroup();
+}
+
+void UIManager::HandlePreviewClick(PDAController& pda, float nx, float ny) {
+    using namespace Glyphs;
+
+    // Map normalized position to grid coordinates
+    int col = static_cast<int>(nx * COLS);
+    int row = static_cast<int>(ny * ROWS);
+    col = std::clamp(col, 0, COLS - 1);
+    row = std::clamp(row, 0, ROWS - 1);
+
+    // Row 7 (status bar) and row 0 (title bar) — not interactive
+    if (row == 0 || row == 7) return;
+
+    // Map to 5x3 touch zone grid
+    int tile_col = col / CHARS_PER_TILE; // 0-4
+    tile_col = std::clamp(tile_col, 0, TILE_COLS - 1);
+
+    // Map row to zone: ZONE_ROWS are {1, 4, 6}
+    // Rows 1-3 → zone 0, rows 4-5 → zone 1, row 6 → zone 2
+    int tile_row;
+    if (row <= 3) tile_row = 0;
+    else if (row <= 5) tile_row = 1;
+    else tile_row = 2;
+
+    // Format: "12" = col 1, row 2 (1-indexed)
+    std::string suffix = std::to_string(tile_col + 1) + std::to_string(tile_row + 1);
+    Logger::Debug("Preview click: grid(" + std::to_string(col) + "," + std::to_string(row) +
+                  ") -> touch " + suffix);
+    pda.QueueInput(suffix);
 }
 
 void UIManager::RenderConfigTab(PDAController& pda, Config& config) {

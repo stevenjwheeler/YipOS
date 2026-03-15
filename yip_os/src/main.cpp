@@ -97,6 +97,17 @@ int main(int argc, char* argv[]) {
 
         // UI
         YipOS::UIManager ui;
+        // Resolve assets path relative to executable
+        {
+            namespace fs = std::filesystem;
+            fs::path exe_dir = fs::path(argv[0]).parent_path();
+            if (exe_dir.empty()) exe_dir = ".";
+            // Try: exe_dir/../assets (build from yip_os/build_win) then exe_dir/assets
+            fs::path assets = exe_dir / ".." / "assets";
+            if (!fs::exists(assets)) assets = exe_dir / "assets";
+            if (!fs::exists(assets)) assets = "assets";
+            ui.SetAssetsPath(assets.string());
+        }
         if (!ui.Initialize("YipOS")) {
             YipOS::Logger::Critical("Failed to initialize UI");
             osc.Shutdown();
