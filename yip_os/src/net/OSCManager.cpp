@@ -2,8 +2,6 @@
 #include "core/Logger.hpp"
 
 #ifdef _WIN32
-    #define WIN32_LEAN_AND_MEAN
-    #include <WinSock2.h>
     #include <WS2tcpip.h>
     #pragma comment(lib, "ws2_32.lib")
     using socklen_t = int;
@@ -30,6 +28,18 @@ static double Now() {
 // Helper to cast void* server_addr_ to sockaddr_in*
 static sockaddr_in* Addr(void* p) { return static_cast<sockaddr_in*>(p); }
 
+static inline bool SocketValid(socket_t s) { return s != INVALID_SOCK; }
+
+static inline void CloseSocket(socket_t& s) {
+    if (!SocketValid(s)) return;
+#ifdef _WIN32
+    closesocket(s);
+#else
+    close(s);
+#endif
+    s = INVALID_SOCK;
+}
+
 OSCManager::OSCManager() = default;
 
 OSCManager::~OSCManager() {
@@ -47,7 +57,7 @@ bool OSCManager::Initialize(const std::string& address, int send_port, int liste
 
     // Send socket
     send_socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (send_socket_ < 0) {
+    if (!SocketValid(send_socket_)) {
         Logger::Error("Failed to create send socket");
         return false;
     }
@@ -60,24 +70,35 @@ bool OSCManager::Initialize(const std::string& address, int send_port, int liste
 
     // Receive socket
     recv_socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (recv_socket_ < 0) {
+    if (!SocketValid(recv_socket_)) {
         Logger::Error("Failed to create receive socket");
         return false;
     }
 
-    // Allow address reuse
+    // Allow address reuse (Linux only — on Windows SO_REUSEADDR enables
+    // port hijacking and can trigger WSAEACCES)
+#ifndef _WIN32
     int opt = 1;
     setsockopt(recv_socket_, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&opt), sizeof(opt));
+#endif
 
     sockaddr_in recv_addr{};
     recv_addr.sin_family = AF_INET;
     recv_addr.sin_port = htons(static_cast<uint16_t>(listen_port));
     recv_addr.sin_addr.s_addr = INADDR_ANY;
 
+#ifdef _WIN32
+    if (bind(recv_socket_, reinterpret_cast<sockaddr*>(&recv_addr), sizeof(recv_addr)) == SOCKET_ERROR) {
+        Logger::Error("Failed to bind receive socket to port " + std::to_string(listen_port) +
+                      " (error " + std::to_string(WSAGetLastError()) + ")");
+        return false;
+    }
+#else
     if (bind(recv_socket_, reinterpret_cast<sockaddr*>(&recv_addr), sizeof(recv_addr)) < 0) {
         Logger::Error("Failed to bind receive socket to port " + std::to_string(listen_port));
         return false;
     }
+#endif
 
     // Set receive timeout (500ms) for graceful shutdown
 #ifdef _WIN32
@@ -103,22 +124,8 @@ void OSCManager::Shutdown() {
     if (recv_thread_.joinable()) {
         recv_thread_.join();
     }
-    if (send_socket_ >= 0) {
-#ifdef _WIN32
-        closesocket(send_socket_);
-#else
-        close(send_socket_);
-#endif
-        send_socket_ = -1;
-    }
-    if (recv_socket_ >= 0) {
-#ifdef _WIN32
-        closesocket(recv_socket_);
-#else
-        close(recv_socket_);
-#endif
-        recv_socket_ = -1;
-    }
+    CloseSocket(send_socket_);
+    CloseSocket(recv_socket_);
     delete Addr(server_addr_);
     server_addr_ = nullptr;
 
@@ -129,7 +136,7 @@ void OSCManager::Shutdown() {
 }
 
 void OSCManager::SendFloat(const std::string& path, float value) {
-    if (send_socket_ < 0 || !server_addr_) return;
+    if (!SocketValid(send_socket_) || !server_addr_) return;
 
     try {
         OSCPP::Client::Packet packet(send_buffer_.data(), send_buffer_.size());
@@ -151,7 +158,7 @@ void OSCManager::SendFloat(const std::string& path, float value) {
 }
 
 void OSCManager::SendBool(const std::string& path, bool value) {
-    if (send_socket_ < 0 || !server_addr_) return;
+    if (!SocketValid(send_socket_) || !server_addr_) return;
 
     // OSC bools are type tags 'T'/'F' with zero data bytes.
     // oscpp has no native bool method, so we build the packet manually.
@@ -187,7 +194,7 @@ void OSCManager::SendBool(const std::string& path, bool value) {
 }
 
 void OSCManager::SendInt(const std::string& path, int value) {
-    if (send_socket_ < 0 || !server_addr_) return;
+    if (!SocketValid(send_socket_) || !server_addr_) return;
 
     try {
         OSCPP::Client::Packet packet(send_buffer_.data(), send_buffer_.size());
@@ -222,7 +229,15 @@ void OSCManager::ReceiveThread() {
                             static_cast<int>(recv_buffer_.size()), 0,
                             reinterpret_cast<sockaddr*>(&sender_addr), &sender_len);
 
-        if (bytes <= 0) continue;
+        if (bytes <= 0) {
+#ifdef _WIN32
+            int err = WSAGetLastError();
+            if (err != WSAETIMEDOUT && err != WSAECONNRESET) {
+                Logger::Debug("recvfrom error: " + std::to_string(err));
+            }
+#endif
+            continue;
+        }
 
         try {
             OSCPP::Server::Packet packet(recv_buffer_.data(), bytes);

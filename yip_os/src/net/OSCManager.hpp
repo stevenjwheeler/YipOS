@@ -8,6 +8,16 @@
 #include <array>
 #include <mutex>
 
+#include <cstdint>
+
+#ifdef _WIN32
+    using socket_t = uintptr_t; // matches SOCKET (UINT_PTR) on both x86 and x64
+    constexpr socket_t INVALID_SOCK = ~socket_t(0); // matches INVALID_SOCKET
+#else
+    using socket_t = int;
+    constexpr socket_t INVALID_SOCK = -1;
+#endif
+
 namespace YipOS {
 
 class OSCManager {
@@ -40,8 +50,8 @@ public:
 private:
     void ReceiveThread();
 
-    int send_socket_ = -1;
-    int recv_socket_ = -1;
+    socket_t send_socket_ = INVALID_SOCK;
+    socket_t recv_socket_ = INVALID_SOCK;
     void* server_addr_ = nullptr; // sockaddr_in*, allocated in Initialize
     std::thread recv_thread_;
     std::atomic<bool> running_{false};
