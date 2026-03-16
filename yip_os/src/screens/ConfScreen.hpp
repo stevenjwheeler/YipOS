@@ -36,6 +36,13 @@ private:
     static constexpr int SETTINGS_PER_PAGE = 6;
     int PageCount() const;
 
+    // NVRAM double-tap confirmation / "DONE" display
+    bool nvram_confirming_ = false;
+    bool nvram_done_ = false;
+    double nvram_confirm_time_ = 0.0;
+    static constexpr double NVRAM_CONFIRM_TIMEOUT = 3.0;
+    static constexpr double NVRAM_DONE_TIMEOUT = 2.0;
+
     // Button column centers (touch cols 1,3,5 → TILE_CENTERS[0,2,4])
     static constexpr int BTN_COLS[3] = {4, 20, 36};
 

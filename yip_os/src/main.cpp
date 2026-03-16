@@ -14,6 +14,7 @@
 #include "net/OSCManager.hpp"
 #include "net/NetTracker.hpp"
 #include "net/VRCXData.hpp"
+#include "net/VRCAvatarData.hpp"
 #include "audio/AudioCapture.hpp"
 #include "audio/WhisperWorker.hpp"
 #include "platform/SystemStats.hpp"
@@ -106,6 +107,42 @@ int main(int argc, char* argv[]) {
         }
         pda.SetVRCXData(&vrcx_data);
 
+        // Avatar management
+        YipOS::VRCAvatarData avatar_data;
+        std::string vrc_root;
+        {
+            std::string osc_path = config.vrc_osc_path.empty()
+                ? YipOS::VRCAvatarData::DefaultOSCPath()
+                : config.vrc_osc_path;
+            if (!osc_path.empty()) {
+                avatar_data.Scan(osc_path);
+                // Detect active avatar from VRC's LocalAvatarData timestamps
+                // OSC path is .../VRChat/VRChat/OSC, parent is VRC root
+                namespace fs = std::filesystem;
+                // Strip trailing slashes so parent_path goes up one level
+                std::string osc_clean = osc_path;
+                while (!osc_clean.empty() && (osc_clean.back() == '/' || osc_clean.back() == '\\'))
+                    osc_clean.pop_back();
+                vrc_root = fs::path(osc_clean).parent_path().string();
+                avatar_data.DetectCurrentAvatar(vrc_root);
+            } else {
+                YipOS::Logger::Info("Avatar OSC path not configured — set in Config tab");
+            }
+        }
+        // Fall back to saved current avatar if detection didn't find one
+        if (avatar_data.GetCurrentAvatarId().empty()) {
+            std::string saved_avatar = config.GetState("avtr.current");
+            if (!saved_avatar.empty()) {
+                avatar_data.SetCurrentAvatarId(saved_avatar);
+                // Load expression params for the saved avatar too
+                if (!vrc_root.empty()) {
+                    avatar_data.LoadExpressionParams(vrc_root, saved_avatar);
+                }
+            }
+        }
+        pda.SetAvatarData(&avatar_data);
+        pda.SetOSCManager(&osc);
+
         // CC (Closed Captions) — audio capture + whisper
         auto audio_capture = YipOS::AudioCapture::Create();
         YipOS::WhisperWorker whisper_worker;
@@ -127,6 +164,14 @@ int main(int argc, char* argv[]) {
 
         // UI
         YipOS::UIManager ui;
+        // Restore saved window size
+        {
+            std::string sw = config.GetState("ui.width");
+            std::string sh = config.GetState("ui.height");
+            if (!sw.empty() && !sh.empty()) {
+                ui.SetInitialSize(std::stoi(sw), std::stoi(sh));
+            }
+        }
         // Resolve assets path relative to executable
         {
             namespace fs = std::filesystem;
@@ -198,6 +243,7 @@ int main(int argc, char* argv[]) {
 
         // Shutdown
         YipOS::Logger::Info("Shutting down");
+        ui.SaveWindowSize(config);
         whisper_worker.Stop();
         audio_capture->Stop();
         ui.Shutdown();

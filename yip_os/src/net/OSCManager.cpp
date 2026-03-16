@@ -215,6 +215,28 @@ void OSCManager::SendInt(const std::string& path, int value) {
     }
 }
 
+void OSCManager::SendString(const std::string& path, const std::string& value) {
+    if (!SocketValid(send_socket_) || !server_addr_) return;
+
+    try {
+        OSCPP::Client::Packet packet(send_buffer_.data(), send_buffer_.size());
+        packet.openMessage(path.c_str(), 1)
+              .string(value.c_str())
+              .closeMessage();
+
+        sendto(send_socket_,
+               static_cast<const char*>(packet.data()),
+               static_cast<int>(packet.size()),
+               0,
+               reinterpret_cast<struct sockaddr*>(server_addr_),
+               sizeof(sockaddr_in));
+
+        LogSend(path, 0.0f);
+    } catch (const std::exception& e) {
+        Logger::Error("OSC SendString error: " + std::string(e.what()));
+    }
+}
+
 void OSCManager::SetInputHandler(InputHandler handler) {
     input_handler_ = std::move(handler);
 }

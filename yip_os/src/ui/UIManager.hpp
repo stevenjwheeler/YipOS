@@ -32,6 +32,8 @@ public:
 
     void SetConfigPath(const std::string& path) { config_path_ = path; }
     void SetAssetsPath(const std::string& path) { assets_path_ = path; }
+    void SetInitialSize(int w, int h) { initial_width_ = w; initial_height_ = h; }
+    void SaveWindowSize(Config& config);
 
 private:
     void RenderStatusTab(PDAController& pda, OSCManager& osc);
@@ -61,6 +63,14 @@ private:
     // VRCX config UI state
     std::array<char, 512> vrcx_path_buf_ = {};
     bool vrcx_path_initialized_ = false;
+
+    // Avatar config UI state
+    std::array<char, 512> avtr_path_buf_ = {};
+    bool avtr_path_initialized_ = false;
+
+    // Window size
+    int initial_width_ = 720;
+    int initial_height_ = 480;
 };
 
 } // namespace YipOS

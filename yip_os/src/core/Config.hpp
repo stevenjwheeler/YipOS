@@ -32,6 +32,9 @@ struct Config {
     bool vrcx_enabled = false;
     std::string vrcx_db_path; // empty = auto-detect
 
+    // [avatar]
+    std::string vrc_osc_path; // empty = auto-detect (Windows) or must configure (Linux)
+
     // [state] — persistent key/value store ("NVRAM")
     // Modules use dotted keys: "net.interface", "stats.disk", etc.
     std::unordered_map<std::string, std::string> state;

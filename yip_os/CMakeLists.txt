@@ -89,6 +89,11 @@ set(YIPOS_SOURCES
     src/screens/VRCXFriendDetailScreen.cpp
     src/screens/CCScreen.cpp
     src/screens/CCConfScreen.cpp
+    src/screens/AVTRScreen.cpp
+    src/screens/AVTRChangeScreen.cpp
+    src/screens/AVTRDetailScreen.cpp
+    src/screens/AVTRCtrlScreen.cpp
+    src/net/VRCAvatarData.cpp
     src/audio/AudioCapture.cpp
     src/audio/WhisperWorker.cpp
     src/ui/UIManager.cpp

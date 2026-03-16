@@ -4,6 +4,7 @@
 #include "core/Config.hpp"
 #include "core/Logger.hpp"
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 
 namespace YipOS {
@@ -142,6 +143,19 @@ void ConfScreen::RenderValues() {
     int base = page_ * SETTINGS_PER_PAGE;
     auto& d = display_;
 
+    // Check NVRAM confirmation / done timeout
+    if (nvram_confirming_ || nvram_done_) {
+        double now = std::chrono::duration<double>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        double timeout = nvram_done_ ? NVRAM_DONE_TIMEOUT : NVRAM_CONFIRM_TIMEOUT;
+        if ((now - nvram_confirm_time_) >= timeout) {
+            nvram_confirming_ = false;
+            nvram_done_ = false;
+            refresh_interval = 0; // stop periodic refresh
+            // Value will revert to "CLR" via normal GetSettingValue below
+        }
+    }
+
     // Row 2: plain text values under touch row 1 labels
     for (int i = 0; i < 3; i++) {
         int si = base + i;
@@ -189,6 +203,12 @@ std::string ConfScreen::PadValue(const std::string& value) {
 std::string ConfScreen::GetSettingValue(int idx) const {
     if (idx < 0 || idx >= static_cast<int>(settings_.size())) return "----";
     auto& s = settings_[idx];
+    if (s.label == "NVRAM" && nvram_done_) {
+        return "DONE";
+    }
+    if (s.label == "NVRAM" && nvram_confirming_) {
+        return "SUR?";
+    }
     if (s.current >= 0 && s.current < static_cast<int>(s.presets.size())) {
         return s.presets[s.current];
     }
@@ -308,10 +328,28 @@ bool ConfScreen::OnInput(const std::string& key) {
         d.WriteText(lstart, label_row, s.label, false);
 
         if (s.label == "NVRAM") {
-            pda_.GetConfig().ClearState();
-            Logger::Info("NVRAM cleared via CONFIG screen");
-            d.WriteText(lstart, label_row, s.label, true);
-            d.WriteText(col_center - 2, value_row, "DONE");
+            double now = std::chrono::duration<double>(
+                std::chrono::steady_clock::now().time_since_epoch()).count();
+
+            if (nvram_confirming_ && (now - nvram_confirm_time_) < NVRAM_CONFIRM_TIMEOUT) {
+                // Second tap — actually clear
+                pda_.GetConfig().ClearState();
+                Logger::Info("NVRAM cleared via CONFIG screen");
+                d.WriteText(lstart, label_row, s.label, true);
+                d.WriteText(col_center - 2, value_row, "DONE");
+                nvram_confirming_ = false;
+                nvram_done_ = true;
+                nvram_confirm_time_ = now; // reuse timer for DONE display
+                refresh_interval = 1.0f;   // keep ticking for DONE timeout
+            } else {
+                // First tap — show confirmation
+                nvram_confirming_ = true;
+                nvram_done_ = false;
+                nvram_confirm_time_ = now;
+                refresh_interval = 1.0f;   // enable periodic refresh for timeout
+                d.WriteText(lstart, label_row, s.label, true);
+                d.WriteText(col_center - 2, value_row, "SUR?");
+            }
         } else if (s.label == "REBOOT") {
             Logger::Info("Reboot requested via CONFIG screen");
             d.WriteText(lstart, label_row, s.label, true);

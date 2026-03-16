@@ -7,6 +7,7 @@
 #include "core/Glyphs.hpp"
 #include "net/OSCManager.hpp"
 #include "net/VRCXData.hpp"
+#include "net/VRCAvatarData.hpp"
 #include "audio/AudioCapture.hpp"
 #include "audio/WhisperWorker.hpp"
 #include "screens/Screen.hpp"
@@ -46,7 +47,7 @@ bool UIManager::Initialize(const std::string& title) {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-    window_ = glfwCreateWindow(720, 480, title.c_str(), nullptr, nullptr);
+    window_ = glfwCreateWindow(initial_width_, initial_height_, title.c_str(), nullptr, nullptr);
     if (!window_) {
         Logger::Error("Failed to create GLFW window");
         glfwTerminate();
@@ -100,6 +101,14 @@ void UIManager::Shutdown() {
     Logger::Info("UI shutdown");
 }
 
+void UIManager::SaveWindowSize(Config& config) {
+    if (!window_) return;
+    int w, h;
+    glfwGetWindowSize(window_, &w, &h);
+    config.SetState("ui.width", std::to_string(w));
+    config.SetState("ui.height", std::to_string(h));
+}
+
 bool UIManager::ShouldClose() const {
     return window_ && glfwWindowShouldClose(window_);
 }
@@ -116,26 +125,21 @@ void UIManager::HandleKeyboardShortcuts(PDAController& pda) {
     ImGuiIO& io = ImGui::GetIO();
     if (io.WantTextInput) return;
 
-    bool shift = io.KeyShift;
-    bool ctrl = io.KeyCtrl;
-
-    // 1-5: touch row 1, Shift+1-5: touch row 2, QWERT: touch row 3
-    ImGuiKey numkeys[] = {ImGuiKey_1, ImGuiKey_2, ImGuiKey_3, ImGuiKey_4, ImGuiKey_5};
+    // 1-5: touch row 1, QWERT: touch row 2, ASDFG: touch row 3
+    ImGuiKey row1keys[] = {ImGuiKey_1, ImGuiKey_2, ImGuiKey_3, ImGuiKey_4, ImGuiKey_5};
+    ImGuiKey row2keys[] = {ImGuiKey_Q, ImGuiKey_W, ImGuiKey_E, ImGuiKey_R, ImGuiKey_T};
+    ImGuiKey row3keys[] = {ImGuiKey_A, ImGuiKey_S, ImGuiKey_D, ImGuiKey_F, ImGuiKey_G};
     for (int i = 0; i < 5; i++) {
-        if (ImGui::IsKeyPressed(numkeys[i], false)) {
-            int col = i + 1;
-            int row = shift ? 2 : 1;
-            std::string input = std::to_string(col) + std::to_string(row);
-            pda.QueueInput(input);
+        if (ImGui::IsKeyPressed(row1keys[i], false)) {
+            pda.QueueInput(std::to_string(i + 1) + "1");
             return;
         }
-    }
-
-    ImGuiKey row3keys[] = {ImGuiKey_Q, ImGuiKey_W, ImGuiKey_E, ImGuiKey_R, ImGuiKey_T};
-    for (int i = 0; i < 5; i++) {
+        if (ImGui::IsKeyPressed(row2keys[i], false)) {
+            pda.QueueInput(std::to_string(i + 1) + "2");
+            return;
+        }
         if (ImGui::IsKeyPressed(row3keys[i], false)) {
-            std::string input = std::to_string(i + 1) + "3";
-            pda.QueueInput(input);
+            pda.QueueInput(std::to_string(i + 1) + "3");
             return;
         }
     }
@@ -602,11 +606,48 @@ void UIManager::RenderConfigTab(PDAController& pda, Config& config) {
         }
     }
 
+    // --- Avatar Management ---
+    ImGui::Separator();
+    ImGui::Text("Avatar Management");
+
+    if (!avtr_path_initialized_) {
+        std::string initial = config.vrc_osc_path;
+        if (initial.empty()) initial = YipOS::VRCAvatarData::DefaultOSCPath();
+        std::snprintf(avtr_path_buf_.data(), avtr_path_buf_.size(), "%s", initial.c_str());
+        avtr_path_initialized_ = true;
+    }
+    ImGui::InputText("VRC OSC Path", avtr_path_buf_.data(), avtr_path_buf_.size());
+#ifdef _WIN32
+    ImGui::TextDisabled("Default: %%LOCALAPPDATA%%Low/VRChat/VRChat/OSC/");
+#else
+    ImGui::TextDisabled("Linux: set to your compatdata .../VRChat/VRChat/OSC/");
+#endif
+
+    auto* avtr = pda.GetAvatarData();
+    if (avtr) {
+        ImGui::Text("Avatars found: %d", static_cast<int>(avtr->GetAvatars().size()));
+        if (!avtr->GetCurrentAvatarId().empty()) {
+            auto* current = avtr->GetCurrentAvatar();
+            if (current) {
+                ImGui::Text("Current: %s", current->name.c_str());
+            }
+        }
+    }
+
+    if (ImGui::Button("Rescan Avatars")) {
+        std::string path(avtr_path_buf_.data());
+        config.vrc_osc_path = path;
+        if (avtr) avtr->Scan(path);
+    }
+
     ImGui::Separator();
     if (ImGui::Button("Save Config")) {
         config.osc_ip = ip_buf;
         if (vrcx_path_initialized_) {
             config.vrcx_db_path = vrcx_path_buf_.data();
+        }
+        if (avtr_path_initialized_) {
+            config.vrc_osc_path = avtr_path_buf_.data();
         }
         if (!config_path_.empty()) {
             config.SaveToFile(config_path_);

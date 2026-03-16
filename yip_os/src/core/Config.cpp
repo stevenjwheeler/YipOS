@@ -58,6 +58,8 @@ bool Config::LoadFromFile(const std::string& path) {
     vrcx_enabled = reader.GetBoolean("vrcx", "enabled", vrcx_enabled);
     vrcx_db_path = reader.Get("vrcx", "db_path", vrcx_db_path);
 
+    vrc_osc_path = reader.Get("avatar", "osc_path", vrc_osc_path);
+
     // Load [state] section — inih exposes all keys in a section via GetFields
     // Since INIReader doesn't expose section iteration, re-parse manually
     state.clear();
@@ -144,6 +146,11 @@ bool Config::SaveToFile(const std::string& path) const {
     f << "enabled = " << (vrcx_enabled ? "true" : "false") << "\n";
     if (!vrcx_db_path.empty()) {
         f << "db_path = " << vrcx_db_path << "\n";
+    }
+
+    f << "\n[avatar]\n";
+    if (!vrc_osc_path.empty()) {
+        f << "osc_path = " << vrc_osc_path << "\n";
     }
 
     if (!state.empty()) {

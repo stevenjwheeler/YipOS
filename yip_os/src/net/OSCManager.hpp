@@ -33,6 +33,7 @@ public:
     void SendFloat(const std::string& path, float value);
     void SendBool(const std::string& path, bool value);
     void SendInt(const std::string& path, int value);
+    void SendString(const std::string& path, const std::string& value);
 
     void SetInputHandler(InputHandler handler);
 

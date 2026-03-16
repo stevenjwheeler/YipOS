@@ -14,6 +14,10 @@
 #include "VRCXFriendDetailScreen.hpp"
 #include "CCScreen.hpp"
 #include "CCConfScreen.hpp"
+#include "AVTRScreen.hpp"
+#include "AVTRChangeScreen.hpp"
+#include "AVTRDetailScreen.hpp"
+#include "AVTRCtrlScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Glyphs.hpp"
@@ -114,6 +118,10 @@ std::unique_ptr<Screen> CreateScreen(const std::string& name, PDAController& pda
     if (name == "VRCX_FRIEND_DETAIL") return std::make_unique<VRCXFriendDetailScreen>(pda);
     if (name == "CC") return std::make_unique<CCScreen>(pda);
     if (name == "CC_CONF") return std::make_unique<CCConfScreen>(pda);
+    if (name == "AVTR") return std::make_unique<AVTRScreen>(pda);
+    if (name == "AVTR_CHANGE") return std::make_unique<AVTRChangeScreen>(pda);
+    if (name == "AVTR_DETAIL") return std::make_unique<AVTRDetailScreen>(pda);
+    if (name == "AVTR_CTRL") return std::make_unique<AVTRCtrlScreen>(pda);
     return nullptr;
 }
 

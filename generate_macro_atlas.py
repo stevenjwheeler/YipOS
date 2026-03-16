@@ -103,7 +103,7 @@ TILE_ROWS = 3
 TILE_LABELS = [
     ["STATS", "NET", "TRACK", "SPVR", "CONF"],
     ["VRCX", "HEART", "MAP", "DBG", "-----"],
-    ["CC", "-----", "-----", "-----", "-----"],
+    ["CC", "AVTR", "-----", "-----", "-----"],
 ]
 CHARS_PER_TILE = COLS // TILE_COLS  # 8
 # Column centers for even spacing across 40 cols (contact grid alignment)
@@ -504,6 +504,48 @@ def layout_boot(buf):
     buf.put_text((COLS - len(label)) // 2, 6, label)
 
 
+def layout_avtr(buf):
+    """AVTR landing: frame + CHANGE/CTRL tiles + status bar."""
+    buf.put_frame("AVTR")
+    btn_cols = [4, 20, 36]
+    row1 = round(ZONE_ROWS[0])
+    for label, active, col in [
+        ("CHANGE", True, btn_cols[0]),
+        ("CTRL", True, btn_cols[1]),
+        ("-----", False, btn_cols[2]),
+    ]:
+        buf.put_text(col - len(label) // 2, row1, label, inverted=active)
+
+    labels_r2 = [("-----", False), ("-----", False), ("-----", False)]
+    row2 = round(ZONE_ROWS[1])
+    for (label, active), col in zip(labels_r2, btn_cols):
+        buf.put_text(col - len(label) // 2, row2, label, inverted=active)
+
+    buf.put_status_bar()
+
+
+def layout_avtr_change(buf):
+    """AVTR Change: frame + TR select hint + status bar."""
+    buf.put_frame("CHANGE")
+    buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
+    buf.put_status_bar()
+
+
+def layout_avtr_detail(buf):
+    """AVTR Detail: frame + APPLY button + status bar."""
+    buf.put_frame("AVTR DTL")
+    a1 = "APPLY"
+    buf.put_text(COLS - 1 - len(a1), 6, a1, inverted=True)
+    buf.put_status_bar()
+
+
+def layout_avtr_ctrl(buf):
+    """AVTR Ctrl: frame + TR toggle hint + status bar."""
+    buf.put_frame("CTRL")
+    buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
+    buf.put_status_bar()
+
+
 SCREEN_LAYOUTS = {
     0: ("HOME", layout_home),
     1: ("STATS", layout_stats),
@@ -521,9 +563,10 @@ SCREEN_LAYOUTS = {
     13: ("FRIEND", layout_vrcx_friend_detail),
     14: ("CC", layout_cc),
     15: ("CC CONF", layout_cc_conf),
-    # Future:
-    # 16: ("STATUS", layout_vrcx_status),
-    # 17: ("NOTIF", layout_vrcx_notif),
+    16: ("AVTR", layout_avtr),
+    17: ("CHANGE", layout_avtr_change),
+    18: ("AVTR DTL", layout_avtr_detail),
+    19: ("CTRL", layout_avtr_ctrl),
 }
 
 
