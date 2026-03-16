@@ -39,6 +39,14 @@ target_include_directories(inih PUBLIC thirdparty/inih)
 # INIReader.cpp includes "../ini.h" — fix with this include path
 target_include_directories(inih PRIVATE thirdparty/inih)
 
+# SQLite3 (amalgamation)
+add_library(sqlite3 STATIC thirdparty/sqlite3/sqlite3.c)
+target_include_directories(sqlite3 PUBLIC thirdparty/sqlite3)
+target_compile_definitions(sqlite3 PRIVATE
+    SQLITE_OMIT_LOAD_EXTENSION
+    SQLITE_THREADSAFE=1
+)
+
 # Collect sources
 set(YIPOS_SOURCES
     src/main.cpp
@@ -57,6 +65,10 @@ set(YIPOS_SOURCES
     src/screens/ConfScreen.cpp
     src/net/OSCManager.cpp
     src/net/NetTracker.cpp
+    src/net/VRCXData.cpp
+    src/screens/VRCXScreen.cpp
+    src/screens/VRCXWorldsScreen.cpp
+    src/screens/VRCXWorldDetailScreen.cpp
     src/ui/UIManager.cpp
 )
 
@@ -82,11 +94,12 @@ target_link_libraries(yip_os PRIVATE
     glad
     glfw
     inih
+    sqlite3
     OpenGL::GL
 )
 
 if(UNIX)
-    target_link_libraries(yip_os PRIVATE pthread)
+    target_link_libraries(yip_os PRIVATE pthread dl)
 elseif(WIN32)
     target_link_libraries(yip_os PRIVATE ws2_32 iphlpapi)
 endif()

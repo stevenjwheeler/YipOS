@@ -28,6 +28,10 @@ struct Config {
     // [logging]
     std::string log_level = "INFO";
 
+    // [vrcx]
+    bool vrcx_enabled = false;
+    std::string vrcx_db_path; // empty = auto-detect
+
     // [state] — persistent key/value store ("NVRAM")
     // Modules use dotted keys: "net.interface", "stats.disk", etc.
     std::unordered_map<std::string, std::string> state;

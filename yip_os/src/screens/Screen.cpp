@@ -6,6 +6,9 @@
 #include "StayScreen.hpp"
 #include "CalibrateScreen.hpp"
 #include "ConfScreen.hpp"
+#include "VRCXScreen.hpp"
+#include "VRCXWorldsScreen.hpp"
+#include "VRCXWorldDetailScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Glyphs.hpp"
@@ -98,6 +101,9 @@ std::unique_ptr<Screen> CreateScreen(const std::string& name, PDAController& pda
     if (name == "SPVR")  return std::make_unique<StayScreen>(pda);
     if (name == "CONF") return std::make_unique<ConfScreen>(pda);
     if (name == "DBG")  return std::make_unique<CalibrateScreen>(pda);
+    if (name == "VRCX") return std::make_unique<VRCXScreen>(pda);
+    if (name == "VRCX_WORLDS") return std::make_unique<VRCXWorldsScreen>(pda);
+    if (name == "VRCX_WORLD_DETAIL") return std::make_unique<VRCXWorldDetailScreen>(pda);
     return nullptr;
 }
 

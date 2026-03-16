@@ -13,6 +13,7 @@
 #include "app/PDAController.hpp"
 #include "net/OSCManager.hpp"
 #include "net/NetTracker.hpp"
+#include "net/VRCXData.hpp"
 #include "platform/SystemStats.hpp"
 #include "ui/UIManager.hpp"
 
@@ -88,6 +89,20 @@ int main(int argc, char* argv[]) {
                                   config.write_delay, config.settle_delay);
         YipOS::NetTracker net_tracker(config.GetState("net.interface"));
         YipOS::PDAController pda(display, net_tracker, config, config.refresh_interval);
+
+        // VRCX integration
+        YipOS::VRCXData vrcx_data;
+        if (config.vrcx_enabled) {
+            std::string db_path = config.vrcx_db_path.empty()
+                ? YipOS::VRCXData::DefaultDBPath()
+                : config.vrcx_db_path;
+            if (vrcx_data.Open(db_path)) {
+                YipOS::Logger::Info("VRCX database opened: " + db_path);
+            } else {
+                YipOS::Logger::Warning("VRCX database not available: " + db_path);
+            }
+        }
+        pda.SetVRCXData(&vrcx_data);
 
         // Restore persisted state
         std::string saved_disk = config.GetState("stats.disk");

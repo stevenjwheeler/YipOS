@@ -4,6 +4,7 @@
 #include <vector>
 #include <deque>
 #include <cstdint>
+#include <array>
 
 struct GLFWwindow;
 
@@ -40,6 +41,7 @@ private:
 
     bool LoadMacroAtlas(const std::string& path);
     void HandlePreviewClick(PDAController& pda, float nx, float ny);
+    void HandleKeyboardShortcuts(PDAController& pda);
 
     GLFWwindow* window_ = nullptr;
 
@@ -55,6 +57,10 @@ private:
     // Config state path (for save/load)
     std::string config_path_;
     std::string assets_path_;
+
+    // VRCX config UI state
+    std::array<char, 512> vrcx_path_buf_ = {};
+    bool vrcx_path_initialized_ = false;
 };
 
 } // namespace YipOS

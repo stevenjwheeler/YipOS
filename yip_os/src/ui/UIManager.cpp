@@ -6,6 +6,7 @@
 #include "core/Logger.hpp"
 #include "core/Glyphs.hpp"
 #include "net/OSCManager.hpp"
+#include "net/VRCXData.hpp"
 #include "screens/Screen.hpp"
 
 #include <glad/glad.h>
@@ -108,7 +109,50 @@ void UIManager::BeginFrame() {
     ImGui::NewFrame();
 }
 
+void UIManager::HandleKeyboardShortcuts(PDAController& pda) {
+    // Skip if any text input is active (typing in a field)
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantTextInput) return;
+
+    bool shift = io.KeyShift;
+    bool ctrl = io.KeyCtrl;
+
+    // 1-5: touch row 1, Shift+1-5: touch row 2, QWERT: touch row 3
+    ImGuiKey numkeys[] = {ImGuiKey_1, ImGuiKey_2, ImGuiKey_3, ImGuiKey_4, ImGuiKey_5};
+    for (int i = 0; i < 5; i++) {
+        if (ImGui::IsKeyPressed(numkeys[i], false)) {
+            int col = i + 1;
+            int row = shift ? 2 : 1;
+            std::string input = std::to_string(col) + std::to_string(row);
+            pda.QueueInput(input);
+            return;
+        }
+    }
+
+    ImGuiKey row3keys[] = {ImGuiKey_Q, ImGuiKey_W, ImGuiKey_E, ImGuiKey_R, ImGuiKey_T};
+    for (int i = 0; i < 5; i++) {
+        if (ImGui::IsKeyPressed(row3keys[i], false)) {
+            std::string input = std::to_string(i + 1) + "3";
+            pda.QueueInput(input);
+            return;
+        }
+    }
+
+    // F1-F5: physical buttons
+    // F1=TL, F2=ML, F3=BL, F4=TR, F5=Joystick
+    static const char* fkeys[] = {"TL", "ML", "BL", "TR", "Joystick"};
+    ImGuiKey fkeyIds[] = {ImGuiKey_F1, ImGuiKey_F2, ImGuiKey_F3, ImGuiKey_F4, ImGuiKey_F5};
+    for (int i = 0; i < 5; i++) {
+        if (ImGui::IsKeyPressed(fkeyIds[i], false)) {
+            pda.QueueInput(fkeys[i]);
+            return;
+        }
+    }
+}
+
 void UIManager::Render(PDAController& pda, Config& config, OSCManager& osc) {
+    HandleKeyboardShortcuts(pda);
+
     // Fill the entire GLFW window, no move/resize/collapse
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -262,6 +306,10 @@ void UIManager::RenderScreenPreview(PDAController& pda) {
     if (ImGui::Button("HOME")) pda.QueueInput("TL");
     ImGui::SameLine();
     if (ImGui::Button("BACK")) pda.QueueInput("ML");
+    ImGui::SameLine();
+    if (ImGui::Button("JOY")) pda.QueueInput("Joystick");
+    ImGui::SameLine();
+    if (ImGui::Button("TR")) pda.QueueInput("TR");
 
     ImGui::EndGroup();
 
@@ -342,8 +390,74 @@ void UIManager::RenderConfigTab(PDAController& pda, Config& config) {
     ImGui::Checkbox("Boot Animation", &config.boot_animation);
 
     ImGui::Separator();
+    ImGui::Text("VRCX Integration");
+    ImGui::TextDisabled("Reads world history, feed, etc. from VRCX's local database.");
+
+    if (ImGui::Checkbox("Enable VRCX", &config.vrcx_enabled)) {
+        // Auto-save immediately so the setting persists across restarts
+        if (!config_path_.empty()) {
+            config.SaveToFile(config_path_);
+        }
+    }
+
+    if (config.vrcx_enabled) {
+        // Initialize path buffer from config on first frame
+        if (!vrcx_path_initialized_) {
+            std::string initial = config.vrcx_db_path.empty()
+                ? VRCXData::DefaultDBPath() : config.vrcx_db_path;
+            std::snprintf(vrcx_path_buf_.data(), vrcx_path_buf_.size(), "%s", initial.c_str());
+            vrcx_path_initialized_ = true;
+        }
+
+        ImGui::InputText("DB Path", vrcx_path_buf_.data(), vrcx_path_buf_.size());
+#ifdef _WIN32
+        ImGui::TextDisabled("Default: %%APPDATA%%\\VRCX\\VRCX.sqlite3");
+#else
+        ImGui::TextDisabled("Default: ~/.config/VRCX/VRCX.sqlite3");
+#endif
+
+        VRCXData* vrcx = pda.GetVRCXData();
+        if (vrcx && vrcx->IsOpen()) {
+            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "Connected");
+            ImGui::SameLine();
+            ImGui::Text("(%d worlds)", vrcx->GetWorldCount());
+        } else {
+            ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.3f, 1.0f), "Not connected");
+        }
+
+        if (ImGui::Button("Connect")) {
+            std::string path(vrcx_path_buf_.data());
+            config.vrcx_db_path = path;
+            if (vrcx) {
+                vrcx->Close();
+                if (vrcx->Open(path)) {
+                    Logger::Info("VRCX reconnected: " + path);
+                } else {
+                    Logger::Warning("VRCX connect failed: " + path);
+                }
+            }
+            if (!config_path_.empty()) {
+                config.SaveToFile(config_path_);
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Disconnect")) {
+            if (vrcx) vrcx->Close();
+        }
+    } else {
+        vrcx_path_initialized_ = false;
+        VRCXData* vrcx = pda.GetVRCXData();
+        if (vrcx && vrcx->IsOpen()) {
+            vrcx->Close();
+        }
+    }
+
+    ImGui::Separator();
     if (ImGui::Button("Save Config")) {
         config.osc_ip = ip_buf;
+        if (vrcx_path_initialized_) {
+            config.vrcx_db_path = vrcx_path_buf_.data();
+        }
         if (!config_path_.empty()) {
             config.SaveToFile(config_path_);
         }

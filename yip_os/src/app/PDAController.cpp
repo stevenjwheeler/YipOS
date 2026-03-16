@@ -182,6 +182,9 @@ void PDAController::ProcessInput() {
 
         // Route to current screen (ML/BL/touch handled per-screen)
         Screen* current = GetCurrentScreen();
+        Logger::Debug("Routing '" + key + "' to screen: " +
+                      (current ? current->name : "NONE") +
+                      " (stack depth=" + std::to_string(screen_stack_.size()) + ")");
         if (current) {
             bool handled = current->OnInput(key);
 

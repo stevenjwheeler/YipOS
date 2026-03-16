@@ -336,6 +336,46 @@ def layout_heart(buf):
     buf.put_status_bar()
 
 
+def layout_vrcx(buf):
+    """VRCX landing: frame + inverted tiles + status bar."""
+    buf.put_frame("VRCX")
+    btn_cols = [4, 20, 36]
+
+    # Row 1 tiles (touch row 1): WORLDS, FEED, STATUS
+    labels_r1 = [("WORLDS", True), ("FEED", False), ("STATUS", False)]
+    row1 = round(ZONE_ROWS[0])  # row 1
+    for (label, active), col in zip(labels_r1, btn_cols):
+        start = col - len(label) // 2
+        buf.put_text(start, row1, label, inverted=active)
+
+    # Row 2 tiles (touch row 2): NOTIF, -----, -----
+    labels_r2 = [("NOTIF", False), ("-----", False), ("-----", False)]
+    row2 = round(ZONE_ROWS[1])  # row 4
+    for (label, active), col in zip(labels_r2, btn_cols):
+        start = col - len(label) // 2
+        buf.put_text(start, row2, label, inverted=active)
+
+    buf.put_status_bar()
+
+
+def layout_vrcx_worlds(buf):
+    """VRCX Worlds: frame + TR select hint + status bar."""
+    buf.put_frame("WORLDS")
+    # Right border arrow to indicate TR selects the highlighted item
+    buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
+    buf.put_status_bar()
+
+
+def layout_vrcx_world_detail(buf):
+    """VRCX World Detail: frame + REJOIN button + status bar."""
+    buf.put_frame("WORLD")
+    # Row 6: REJOIN button (inverted, right-aligned near TR button position)
+    rejoin = "REJOIN"
+    rejoin_col = COLS - 1 - len(rejoin)
+    buf.put_text(rejoin_col, 6, rejoin, inverted=True)
+    buf.put_status_bar()
+
+
 def _layout_conf_page(buf, title, labels_row1, labels_row2):
     """Shared layout for config pages: frame + inverted labels + separator + status bar.
 
@@ -410,8 +450,13 @@ SCREEN_LAYOUTS = {
     # 5: BOOT — custom screen, preserved from existing atlas (do NOT regenerate)
     6: ("CONF1", layout_conf_p1),
     7: ("CONF2", layout_conf_p2),
-    # Future screens:
-    # 7: ("TRACK", layout_track),
+    8: ("VRCX", layout_vrcx),
+    9: ("WORLDS", layout_vrcx_worlds),
+    10: ("WORLD", layout_vrcx_world_detail),
+    # Future:
+    # 11: ("FEED", layout_vrcx_feed),
+    # 11: ("STATUS", layout_vrcx_status),
+    # 12: ("NOTIF", layout_vrcx_notif),
 }
 
 
