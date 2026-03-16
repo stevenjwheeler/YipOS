@@ -338,4 +338,17 @@ void PDAController::Reboot() {
     reboot_requested_ = true;
 }
 
+void PDAController::SetSPVRStatus(int device_index, int status) {
+    if (device_index >= 0 && device_index < SPVR_DEVICE_COUNT) {
+        spvr_status_[device_index].store(status);
+    }
+}
+
+int PDAController::GetSPVRStatus(int device_index) const {
+    if (device_index >= 0 && device_index < SPVR_DEVICE_COUNT) {
+        return spvr_status_[device_index].load();
+    }
+    return 0;
+}
+
 } // namespace YipOS

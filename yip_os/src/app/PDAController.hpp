@@ -6,6 +6,8 @@
 #include <mutex>
 #include <memory>
 #include <unordered_map>
+#include <array>
+#include <atomic>
 
 namespace YipOS {
 
@@ -77,6 +79,17 @@ public:
     const VRCAvatarEntry* GetSelectedAvatar() const { return selected_avatar_; }
     OSCManager* GetOSCManager() { return osc_; }
     void SetOSCManager(OSCManager* o) { osc_ = o; }
+
+    // SPVR device status (updated from OSC handler, read by StayScreen)
+    // Indices: 0=HMD, 1=ControllerLeft, 2=ControllerRight, 3=FootLeft, 4=FootRight, 5=Hip
+    static constexpr int SPVR_DEVICE_COUNT = 6;
+    static constexpr const char* SPVR_DEVICE_NAMES[SPVR_DEVICE_COUNT] = {
+        "HMD", "ControllerLeft", "ControllerRight", "FootLeft", "FootRight", "Hip"
+    };
+    // Status values: 0=disabled, 1=unlocked, 2=locked, 3=warning, 4=disobey, 5=OOB
+    void SetSPVRStatus(int device_index, int status);
+    int GetSPVRStatus(int device_index) const;
+
     Screen* GetCurrentScreen() const;
     int GetScreenStackDepth() const { return static_cast<int>(screen_stack_.size()); }
     char GetSpinnerChar() const;
@@ -125,6 +138,9 @@ private:
     VRCAvatarData* avatar_data_ = nullptr;
     const VRCAvatarEntry* selected_avatar_ = nullptr;
     OSCManager* osc_ = nullptr;
+
+    // SPVR device status (thread-safe: updated from OSC recv thread)
+    std::array<std::atomic<int>, SPVR_DEVICE_COUNT> spvr_status_{};
 };
 
 } // namespace YipOS

@@ -278,34 +278,30 @@ def layout_stay(buf):
     """StayPutVR screen: borders + separator + body part tiles (unlocked)."""
     buf.put_frame("STAYPUTVR")
 
-    # Row 1: connection status placeholder (dynamic)
-    # Just the static label positions
-    buf.put_text(24, 1, "DRIFT:")
-
     # Row 2: separator
     buf.put_hline(2)
 
     # Body part tiles — labels inverted (touchable), state text normal
     tile_positions = [TILE_CENTERS[0] - 3, TILE_CENTERS[1] - 3, TILE_CENTERS[3] - 3]
     # → [1, 9, 25]
-    parts_row1 = ["LW", "RW", "HEAD"]
-    parts_row2 = ["LF", "RF", "PLAY"]
+    parts_row1 = ["LW", "RW", "COLLAR"]
+    parts_row2 = ["LF", "RF", "ALL"]
 
     for i, pos in enumerate(tile_positions):
         # Row 1 of parts (display row 3)
         part = parts_row1[i]
         buf.put_glyph(pos, 3, G_UNLOCK)
-        label = f" {part:4s} "
+        label = f" {part:5s}"
         buf.put_text(pos + 1, 3, label, inverted=True)
-        state = " FREE ".center(8)[:8]
+        state = f"{'FREE':8s}"
         buf.put_text(pos, 4, state)
 
         # Row 2 of parts (display row 5)
         part = parts_row2[i]
         buf.put_glyph(pos, 5, G_UNLOCK)
-        label = f" {part:4s} "
+        label = f" {part:5s}"
         buf.put_text(pos + 1, 5, label, inverted=True)
-        state = " FREE ".center(8)[:8]
+        state = f"{'FREE':8s}"
         buf.put_text(pos, 6, state)
 
     buf.put_status_bar()

@@ -160,6 +160,16 @@ int main(int argc, char* argv[]) {
             if (address.find("CRT_Wrist_") != std::string::npos) {
                 pda.OnCRTInput(address, value);
             }
+            // SPVR device status updates
+            if (address.find("SPVR_") != std::string::npos && address.find("_Status") != std::string::npos) {
+                int status = static_cast<int>(value);
+                for (int i = 0; i < YipOS::PDAController::SPVR_DEVICE_COUNT; i++) {
+                    if (address.find(YipOS::PDAController::SPVR_DEVICE_NAMES[i]) != std::string::npos) {
+                        pda.SetSPVRStatus(i, status);
+                        break;
+                    }
+                }
+            }
         });
 
         // UI
