@@ -1,0 +1,9 @@
+YipOS - PDA Operating System for VRChat
+Copyright (c) 2026 Foxipso
+
+All rights reserved.
+
+This software is provided for personal use. Redistribution or modification
+without permission is not permitted.
+
+For more information, visit https://foxipso.com
