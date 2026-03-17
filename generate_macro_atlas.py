@@ -46,7 +46,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 COPY_DEST_DIR = os.path.join(
     os.path.expanduser("~"),
     "Documents/unity/3d/unity/Rexipso Dark Test 1/"
-    "Assets/Foxipso/Assets/Williams Tube/Textures",
+    "Assets/Foxipso/Assets/Yip-Boi/Williams Tube/Textures",
 )
 
 # --- PDA ROM glyph constants (from pda_poc.py) ---
@@ -101,8 +101,8 @@ ZONE_ROWS = [
 TILE_COLS = 5
 TILE_ROWS = 3
 TILE_LABELS = [
-    ["STATS", "NET", "TRACK", "SPVR", "CONF"],
-    ["VRCX", "HEART", "MAP", "DBG", "-----"],
+    ["STATS", "NET", "-TRACK", "SPVR", "CONF"],
+    ["VRCX", "HEART", "-MAP", "-DBG", "-----"],
     ["CC", "AVTR", "-----", "-----", "-----"],
 ]
 CHARS_PER_TILE = COLS // TILE_COLS  # 8
@@ -221,9 +221,10 @@ def layout_home(buf):
         for tx in range(TILE_COLS):
             label = TILE_LABELS[ty][tx]
             is_active = label[0] != '-'
+            display_label = label if is_active else label.lstrip('-')
             center = TILE_CENTERS[tx]
-            start_col = center - len(label) // 2
-            buf.put_text(start_col, row, label, inverted=is_active)
+            start_col = center - len(display_label) // 2
+            buf.put_text(start_col, row, display_label, inverted=is_active)
         buf.put_glyph(COLS - 1, row, G_VLINE)
 
     buf.put_status_bar()
@@ -232,6 +233,7 @@ def layout_home(buf):
 def layout_stats(buf):
     """Stats screen: borders + labels + empty bars + units."""
     buf.put_frame("SYSTEM STATUS")
+    buf.put_glyph(0, 1, G_LEFT_A)
 
     # Row 1: CPU
     buf.put_text(1, 1, "CPU")
@@ -277,6 +279,7 @@ def layout_stats(buf):
 def layout_stay(buf):
     """StayPutVR screen: borders + separator + body part tiles (unlocked)."""
     buf.put_frame("STAYPUTVR")
+    buf.put_glyph(0, 1, G_LEFT_A)
 
     # Row 2: separator
     buf.put_hline(2)
@@ -310,12 +313,14 @@ def layout_stay(buf):
 def layout_net(buf):
     """Network screen: frame + status bar only — all content is dynamic."""
     buf.put_frame("NETWORK")
+    buf.put_glyph(0, 1, G_LEFT_A)
     buf.put_status_bar()
 
 
 def layout_heart(buf):
     """Heart rate monitor: frame + static labels + scale."""
     buf.put_frame("HEARTBEAT")
+    buf.put_glyph(0, 1, G_LEFT_A)
     # Row 1 static labels
     buf.put_text(8, 1, "BPM")
     buf.put_text(14, 1, "HI:")
@@ -335,6 +340,7 @@ def layout_heart(buf):
 def layout_vrcx(buf):
     """VRCX landing: frame + inverted tiles + status bar."""
     buf.put_frame("VRCX")
+    buf.put_glyph(0, 1, G_LEFT_A)
     btn_cols = [4, 20, 36]
 
     # Row 1 tiles (touch row 1): WORLD HIST, FRND FEED, STATUS
@@ -349,8 +355,8 @@ def layout_vrcx(buf):
         if label2:
             buf.put_text(col - len(label2) // 2, row1 + 1, label2, inverted=active)
 
-    # Row 2 tiles (touch row 2): NOTIF, -----, -----
-    labels_r2 = [("NOTIF", False), ("-----", False), ("-----", False)]
+    # Row 2 tiles (touch row 2): NOTIF (active), -----, -----
+    labels_r2 = [("NOTIF", True), ("-----", False), ("-----", False)]
     row2 = round(ZONE_ROWS[1])  # row 4
     for (label, active), col in zip(labels_r2, btn_cols):
         start = col - len(label) // 2
@@ -362,6 +368,7 @@ def layout_vrcx(buf):
 def layout_vrcx_worlds(buf):
     """VRCX Worlds: frame + TR select hint + status bar."""
     buf.put_frame("WORLDS")
+    buf.put_glyph(0, 1, G_LEFT_A)
     # Right border arrow to indicate TR selects the highlighted item
     buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
     buf.put_status_bar()
@@ -370,6 +377,7 @@ def layout_vrcx_worlds(buf):
 def layout_vrcx_world_detail(buf):
     """VRCX World Detail: frame + REJOIN button (2 rows) + status bar."""
     buf.put_frame("WORLD")
+    buf.put_glyph(0, 1, G_LEFT_A)
     # Rows 5-6: REJOIN button (inverted, right-aligned near touch 53)
     r1 = "REJOIN"
     r2 = "(OPN BRWSR)"
@@ -381,6 +389,7 @@ def layout_vrcx_world_detail(buf):
 def layout_vrcx_feed(buf):
     """VRCX Feed: frame + TR select hint + status bar."""
     buf.put_frame("FEED")
+    buf.put_glyph(0, 1, G_LEFT_A)
     # Right border arrow to indicate TR selects the highlighted item
     buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
     buf.put_status_bar()
@@ -389,6 +398,7 @@ def layout_vrcx_feed(buf):
 def layout_vrcx_feed_detail(buf):
     """VRCX Feed Detail: frame + 3 buttons + status bar."""
     buf.put_frame("FEED DTL")
+    buf.put_glyph(0, 1, G_LEFT_A)
     # Left: WRLD DTL (touch 13)
     buf.put_text(1, 5, "WRLD DTL", inverted=True)
     buf.put_text(1, 6, "(INSTANCE)", inverted=True)
@@ -408,6 +418,7 @@ def layout_vrcx_feed_detail(buf):
 def layout_vrcx_friend_detail(buf):
     """VRCX Friend Detail: frame + PROFILE button + status bar."""
     buf.put_frame("FRIEND")
+    buf.put_glyph(0, 1, G_LEFT_A)
     # Right: PROFILE button (touch 53, single row on row 6)
     p1 = "PROFILE"
     buf.put_text(COLS - 1 - len(p1), 6, p1, inverted=True)
@@ -417,6 +428,7 @@ def layout_vrcx_friend_detail(buf):
 def layout_cc(buf):
     """Closed Captions: frame + CONF button on row 6, status bar no clock."""
     buf.put_frame("CC")
+    buf.put_glyph(0, 1, G_LEFT_A)
     # CONF button on row 6, right-aligned (touch 52)
     buf.put_text(COLS - 1 - 4, 6, "CONF", inverted=True)
     # Status bar without clock
@@ -427,11 +439,9 @@ def layout_cc(buf):
 
 
 def layout_cc_conf(buf):
-    """CC Config: frame + START/STOP button + status bar."""
+    """CC Config: frame + back arrow + status bar (read-only, config via desktop)."""
     buf.put_frame("CC CONF")
-    # START button (touch 53, right-aligned)
-    buf.put_text(COLS - 1 - len("START"), 5, "START", inverted=True)
-    buf.put_text(COLS - 1 - len("(TOGGLE)"), 6, "(TOGGLE)", inverted=True)
+    buf.put_glyph(0, 1, G_LEFT_A)
     buf.put_status_bar()
 
 
@@ -442,6 +452,7 @@ def _layout_conf_page(buf, title, labels_row1, labels_row2):
     Dynamic values (plain text) on rows 2,5 written by RenderDynamic().
     """
     buf.put_frame(title)
+    buf.put_glyph(0, 1, G_LEFT_A)
     btn_cols = [4, 20, 36]
 
     # Row 1: inverted labels = touchable buttons (touch row 1)
@@ -503,6 +514,7 @@ def layout_boot(buf):
 def layout_avtr(buf):
     """AVTR landing: frame + CHANGE/CTRL tiles + status bar."""
     buf.put_frame("AVTR")
+    buf.put_glyph(0, 1, G_LEFT_A)
     btn_cols = [4, 20, 36]
     row1 = round(ZONE_ROWS[0])
     for label, active, col in [
@@ -523,6 +535,7 @@ def layout_avtr(buf):
 def layout_avtr_change(buf):
     """AVTR Change: frame + TR select hint + status bar."""
     buf.put_frame("CHANGE")
+    buf.put_glyph(0, 1, G_LEFT_A)
     buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
     buf.put_status_bar()
 
@@ -530,6 +543,7 @@ def layout_avtr_change(buf):
 def layout_avtr_detail(buf):
     """AVTR Detail: frame + APPLY button + status bar."""
     buf.put_frame("AVTR DTL")
+    buf.put_glyph(0, 1, G_LEFT_A)
     a1 = "APPLY"
     buf.put_text(COLS - 1 - len(a1), 6, a1, inverted=True)
     buf.put_status_bar()
@@ -538,7 +552,21 @@ def layout_avtr_detail(buf):
 def layout_avtr_ctrl(buf):
     """AVTR Ctrl: frame + TR toggle hint + status bar."""
     buf.put_frame("CTRL")
+    buf.put_glyph(0, 1, G_LEFT_A)
     buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
+    buf.put_status_bar()
+
+
+def layout_vrcx_notif(buf):
+    """VRCX Notifications: frame + back arrow + CLR ALL button (center) + status bar."""
+    buf.put_frame("NOTIF")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    # CLR ALL / NOTIFS button (touch 33, centered on col 20)
+    btn_center = 20
+    l1 = "CLR ALL"
+    l2 = "NOTIFS"
+    buf.put_text(btn_center - len(l1) // 2, 5, l1, inverted=True)
+    buf.put_text(btn_center - len(l2) // 2, 6, l2, inverted=True)
     buf.put_status_bar()
 
 
@@ -563,6 +591,7 @@ SCREEN_LAYOUTS = {
     17: ("CHANGE", layout_avtr_change),
     18: ("AVTR DTL", layout_avtr_detail),
     19: ("CTRL", layout_avtr_ctrl),
+    20: ("NOTIF", layout_vrcx_notif),
 }
 
 

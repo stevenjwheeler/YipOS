@@ -80,6 +80,11 @@ public:
     OSCManager* GetOSCManager() { return osc_; }
     void SetOSCManager(OSCManager* o) { osc_ = o; }
 
+    // Notification seen tracking
+    bool HasUnseenNotifs();
+    void MarkNotifsSeen();
+    void ClearAllNotifs();
+
     // SPVR device status (updated from OSC handler, read by StayScreen)
     // Indices: 0=HMD, 1=ControllerLeft, 2=ControllerRight, 3=FootLeft, 4=FootRight, 5=Hip
     static constexpr int SPVR_DEVICE_COUNT = 6;

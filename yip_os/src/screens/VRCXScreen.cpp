@@ -30,6 +30,14 @@ void VRCXScreen::Render() {
 }
 
 void VRCXScreen::RenderDynamic() {
+    // NOTIF tile (1,0): show "*" indicator when unseen notifications exist
+    // "NOTIF" at cols 2-6, row 4 → "*" at col 7
+    if (pda_.HasUnseenNotifs()) {
+        display_.WriteChar(7, ZONE_ROWS[1], static_cast<int>('*') + INVERT_OFFSET);
+    } else {
+        display_.WriteChar(7, ZONE_ROWS[1], static_cast<int>(' '));
+    }
+
     RenderClock();
     RenderCursor();
 }
@@ -55,7 +63,14 @@ void VRCXScreen::WriteTileLine(int tx, int ty, const char* text, int row) {
 void VRCXScreen::WriteTile(int tx, int ty) {
     auto& tile = TILES[ty][tx];
     int row = ZONE_ROWS[ty];
-    WriteTileLine(tx, ty, tile.line1, row);
+
+    // NOTIF tile gets "*" suffix when unseen notifications exist
+    if (ty == 1 && tx == 0 && pda_.HasUnseenNotifs()) {
+        WriteTileLine(tx, ty, "NOTIF*", row);
+    } else {
+        WriteTileLine(tx, ty, tile.line1, row);
+    }
+
     if (tile.line2) {
         WriteTileLine(tx, ty, tile.line2, row + 1);
     }

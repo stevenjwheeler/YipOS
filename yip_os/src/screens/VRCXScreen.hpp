@@ -25,7 +25,7 @@ private:
 
     static constexpr Tile TILES[2][3] = {
         {{"WORLD", "HIST", "VRCX_WORLDS"}, {"FRND", "FEED", "VRCX_FEED"}, {"STATUS", nullptr, nullptr}},
-        {{"NOTIF", nullptr, nullptr},       {"-----", nullptr, nullptr},   {"-----", nullptr, nullptr}},
+        {{"NOTIF", nullptr, "VRCX_NOTIF"},  {"-----", nullptr, nullptr},   {"-----", nullptr, nullptr}},
     };
 
     static constexpr int BTN_COLS[3] = {4, 20, 36};

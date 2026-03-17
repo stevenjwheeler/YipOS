@@ -33,17 +33,32 @@ void HomeScreen::RenderContent() {
 }
 
 void HomeScreen::RenderDynamic() {
+    // VRCX tile (1,0): show "*" indicator when unseen notifications exist
+    // "VRCX" at cols 2-5, row 4 → "*" at col 6
+    if (pda_.HasUnseenNotifs()) {
+        display_.WriteChar(6, ZONE_ROWS[1], static_cast<int>('*') + INVERT_OFFSET);
+    } else {
+        display_.WriteChar(6, ZONE_ROWS[1], static_cast<int>(' '));
+    }
+
     RenderClock();
     RenderCursor();
-    Logger::Debug("Home screen dynamic rendered");
 }
 
 void HomeScreen::WriteTile(int tx, int ty) {
     const char* label = TILE_LABELS[ty][tx].text;
     bool is_active = label[0] != '-';
-    // Active tiles: inverted by default, toggle to normal when pressed
     bool inverted = is_active && !tile_highlighted_[ty][tx];
-    int len = static_cast<int>(std::strlen(label));
+
+    // VRCX tile (1,0) gets "*" suffix when unseen notifications exist
+    std::string label_str;
+    if (ty == 1 && tx == 0 && pda_.HasUnseenNotifs()) {
+        label_str = std::string(label) + "*";
+    } else {
+        label_str = label;
+    }
+
+    int len = static_cast<int>(label_str.size());
     int center = TILE_CENTERS[tx];
     int start_col = center - len / 2;
     int row = ZONE_ROWS[ty];
@@ -51,7 +66,7 @@ void HomeScreen::WriteTile(int tx, int ty) {
     for (int i = 0; i < len; i++) {
         int c = start_col + i;
         if (c < 1 || c >= COLS - 1) continue;
-        char ch = label[i];
+        char ch = label_str[i];
         int char_idx = (ch >= 32 && ch <= 126) ? static_cast<int>(ch) : 32;
         if (inverted) char_idx += INVERT_OFFSET;
         display_.WriteChar(c, row, char_idx);

@@ -18,6 +18,7 @@
 #include "AVTRChangeScreen.hpp"
 #include "AVTRDetailScreen.hpp"
 #include "AVTRCtrlScreen.hpp"
+#include "VRCXNotifScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Glyphs.hpp"
@@ -122,6 +123,7 @@ std::unique_ptr<Screen> CreateScreen(const std::string& name, PDAController& pda
     if (name == "AVTR_CHANGE") return std::make_unique<AVTRChangeScreen>(pda);
     if (name == "AVTR_DETAIL") return std::make_unique<AVTRDetailScreen>(pda);
     if (name == "AVTR_CTRL") return std::make_unique<AVTRCtrlScreen>(pda);
+    if (name == "VRCX_NOTIF") return std::make_unique<VRCXNotifScreen>(pda);
     return nullptr;
 }
 

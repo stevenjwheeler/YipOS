@@ -226,12 +226,13 @@ void UIManager::RenderStatusTab(PDAController& pda, OSCManager& osc) {
     ImGui::Text("OS: Up and running");
     ImGui::Separator();
 
+    ImGui::Dummy(ImVec2(0.0f, 20.0f));
     // --- Input Controls ---
     ImVec2 nav_btn(60, 28);
     ImVec2 touch_btn(40, 28);
 
-    // Row 1: HOME | touch row 1 | SEL
-    if (ImGui::Button("HOME", nav_btn)) pda.QueueInput("TL");
+    // Row 1: BACK | touch row 1 | SEL
+    if (ImGui::Button("BACK", nav_btn)) pda.QueueInput("TL");
     ImGui::SameLine(0, 8);
     ImGui::TextDisabled("|");
     ImGui::SameLine(0, 8);
@@ -246,7 +247,9 @@ void UIManager::RenderStatusTab(PDAController& pda, OSCManager& osc) {
     ImGui::SameLine(0, 8);
     if (ImGui::Button("SEL", nav_btn)) pda.QueueInput("TR");
 
-    // Row 2: PG UP | touch row 2 | JOY DWN (tall)
+    ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+    // Row 2: PG UP | touch row 2
     if (ImGui::Button("PG UP", nav_btn)) pda.QueueInput("ML");
     ImGui::SameLine(0, 8);
     ImGui::TextDisabled("|");
@@ -257,12 +260,8 @@ void UIManager::RenderStatusTab(PDAController& pda, OSCManager& osc) {
         if (ImGui::Button(label, touch_btn)) pda.QueueInput(label);
         if (c < 5) ImGui::SameLine(0, 4);
     }
-    ImGui::SameLine(0, 8);
-    ImGui::TextDisabled("|");
-    ImGui::SameLine(0, 16);
-    if (ImGui::Button("JOY\nDWN", ImVec2(nav_btn.x, nav_btn.y * 2 + 4))) pda.QueueInput("Joystick");
 
-    // Row 3: PG DWN | touch row 3
+    // Row 3: PG DWN | touch row 3 | JOY DWN
     if (ImGui::Button("PG DWN", nav_btn)) pda.QueueInput("BL");
     ImGui::SameLine(0, 8);
     ImGui::TextDisabled("|");
@@ -273,6 +272,12 @@ void UIManager::RenderStatusTab(PDAController& pda, OSCManager& osc) {
         if (ImGui::Button(label, touch_btn)) pda.QueueInput(label);
         if (c < 5) ImGui::SameLine(0, 4);
     }
+    ImGui::SameLine(0, 8);
+    ImGui::TextDisabled("|");
+    ImGui::SameLine(0, 8);
+    if (ImGui::Button("JOY\nDWN", nav_btn)) pda.QueueInput("Joystick");
+
+    ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
     ImGui::Separator();
 

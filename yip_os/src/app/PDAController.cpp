@@ -3,6 +3,7 @@
 #include "screens/Screen.hpp"
 #include "screens/HomeScreen.hpp"
 #include "net/NetTracker.hpp"
+#include "net/VRCXData.hpp"
 #include "platform/SystemStats.hpp"
 #include "core/Glyphs.hpp"
 #include "core/Config.hpp"
@@ -352,6 +353,27 @@ int PDAController::GetSPVRStatus(int device_index) const {
         return spvr_status_[device_index].load();
     }
     return 0;
+}
+
+bool PDAController::HasUnseenNotifs() {
+    if (!vrcx_data_ || !vrcx_data_->IsOpen()) return false;
+    auto notifs = vrcx_data_->GetNotifications(1);
+    if (notifs.empty()) return false;
+    std::string last_seen = config_.GetState("notif.last_seen");
+    return last_seen != notifs[0].created_at;
+}
+
+void PDAController::MarkNotifsSeen() {
+    if (!vrcx_data_ || !vrcx_data_->IsOpen()) return;
+    auto notifs = vrcx_data_->GetNotifications(1);
+    if (!notifs.empty()) {
+        config_.SetState("notif.last_seen", notifs[0].created_at);
+    }
+}
+
+void PDAController::ClearAllNotifs() {
+    // Mark all current notifs as seen
+    MarkNotifsSeen();
 }
 
 } // namespace YipOS
