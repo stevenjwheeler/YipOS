@@ -87,7 +87,9 @@ void VRCXNotifScreen::RenderRow(int i, bool selected) {
     int content_width = COLS - 2;
 
     // indicator(1) + type(4) + space(1) + sender + time
-    int sender_max = content_width - time_len - 6;
+    static constexpr int LEFT_COL = 2;  // col 0=border, col 1=margin
+    int usable_width = COLS - LEFT_COL - 1;  // 37
+    int sender_max = usable_width - time_len - 6;
     std::string sender = n.sender;
     if (static_cast<int>(sender.size()) > sender_max) {
         sender = sender.substr(0, sender_max);
@@ -105,7 +107,7 @@ void VRCXNotifScreen::RenderRow(int i, bool selected) {
     for (int c = 0; c < static_cast<int>(line.size()); c++) {
         int ch = static_cast<int>(line[c]);
         if (selected && c < SEL_WIDTH) ch += INVERT_OFFSET;
-        d.WriteChar(1 + c, row, ch);
+        d.WriteChar(LEFT_COL + c, row, ch);
     }
 
     // Time right-justified

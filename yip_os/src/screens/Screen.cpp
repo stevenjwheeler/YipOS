@@ -22,6 +22,8 @@
 #include "LockScreen.hpp"
 #include "BFIScreen.hpp"
 #include "BFIParamScreen.hpp"
+#include "ChatScreen.hpp"
+#include "ChatDetailScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Glyphs.hpp"
@@ -113,8 +115,8 @@ void Screen::RenderStatusIcons() {
     } else {
         display_.WriteGlyph(2, 7, G_HLINE);
     }
-    // Col 3: notification indicator
-    if (pda_.HasUnseenNotifsCached()) {
+    // Col 3: notification indicator (VRCX notifs OR chat unseen)
+    if (pda_.HasUnseenNotifsCached() || pda_.HasUnseenChatCached()) {
         display_.WriteGlyph(3, 7, G_BULLET);
     } else {
         display_.WriteGlyph(3, 7, G_HLINE);
@@ -149,6 +151,8 @@ std::unique_ptr<Screen> CreateScreen(const std::string& name, PDAController& pda
     if (name == "LOCK") return std::make_unique<LockScreen>(pda);
     if (name == "BFI") return std::make_unique<BFIScreen>(pda);
     if (name == "BFI_PARAM") return std::make_unique<BFIParamScreen>(pda);
+    if (name == "CHAT") return std::make_unique<ChatScreen>(pda);
+    if (name == "CHAT_DTL") return std::make_unique<ChatDetailScreen>(pda);
     return nullptr;
 }
 

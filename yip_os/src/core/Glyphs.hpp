@@ -27,7 +27,7 @@ struct TileLabel {
 // clang-format off
 constexpr TileLabel TILE_LABELS[TILE_ROWS][TILE_COLS] = {
     {{"STATS"}, {"NET"},   {"-----"}, {"SPVR"},  {"CONF"}},
-    {{"VRCX"},  {"HEART"}, {"BFI"},   {"DBG"},   {"-----"}},
+    {{"VRCX"},  {"HEART"}, {"BFI"},   {"DBG"},   {"CHAT"}},
     {{"CC"},    {"AVTR"},  {"-----"}, {"-----"}, {"LOCK"}},
 };
 // clang-format on

@@ -41,6 +41,14 @@ void HomeScreen::RenderDynamic() {
         display_.WriteChar(6, ZONE_ROWS[1], static_cast<int>(' '));
     }
 
+    // CHAT tile (1,4): show "*" indicator when unseen chat messages exist
+    // "CHAT" at cols 34-37, row 4 → "*" at col 38
+    if (pda_.HasUnseenChatCached()) {
+        display_.WriteChar(38, ZONE_ROWS[1], static_cast<int>('*') + INVERT_OFFSET);
+    } else {
+        display_.WriteChar(38, ZONE_ROWS[1], static_cast<int>(' '));
+    }
+
     RenderClock();
     RenderCursor();
 }

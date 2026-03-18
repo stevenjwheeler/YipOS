@@ -97,7 +97,10 @@ set(YIPOS_SOURCES
     src/screens/LockScreen.cpp
     src/screens/BFIScreen.cpp
     src/screens/BFIParamScreen.cpp
+    src/net/ChatClient.cpp
     src/net/VRCAvatarData.cpp
+    src/screens/ChatScreen.cpp
+    src/screens/ChatDetailScreen.cpp
     src/audio/AudioCapture.cpp
     src/audio/WhisperWorker.cpp
     src/ui/UIManager.cpp
@@ -125,6 +128,7 @@ target_include_directories(yip_os PRIVATE
 )
 
 find_package(OpenGL REQUIRED)
+find_package(CURL REQUIRED)
 
 target_link_libraries(yip_os PRIVATE
     imgui
@@ -134,6 +138,7 @@ target_link_libraries(yip_os PRIVATE
     sqlite3
     whisper
     OpenGL::GL
+    CURL::libcurl
 )
 
 if(UNIX)

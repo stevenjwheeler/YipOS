@@ -101,7 +101,7 @@ ConfScreen::ConfScreen(PDAController& pda) : Screen(pda) {
     settings_.push_back({"NVRAM", "", {"CLR"}, {}, 0, true});
 
     // === Page 2 (macro slot 7) ===
-    // Row 1: REFR, NAV, REBOOT
+    // Row 1: REFR, ALOCK, CHATBG — Row 2: REBOOT
     settings_.push_back({"REFR", "", {"OFF", "5S", "10S", "30S"},
                          {0.0f, 5.0f, 10.0f, 30.0f}, 0, false});
     {
@@ -123,6 +123,21 @@ ConfScreen::ConfScreen(PDAController& pda) : Screen(pda) {
         std::string saved = config.GetState("lock.autolock", "30");
         float val = std::stof(saved);
         int best = 0;
+        float best_dist = 999;
+        for (int i = 0; i < static_cast<int>(s.values.size()); i++) {
+            float d = std::abs(s.values[i] - val);
+            if (d < best_dist) { best_dist = d; best = i; }
+        }
+        s.current = best;
+    }
+
+    settings_.push_back({"CHATBG", "chat.refresh", {"30S", "1M", "5M", "OFF"},
+                         {30.0f, 60.0f, 300.0f, 0.0f}, 1, false});
+    {
+        auto& s = settings_.back();
+        std::string saved = config.GetState("chat.refresh", "60");
+        float val = std::stof(saved);
+        int best = 1;
         float best_dist = 999;
         for (int i = 0; i < static_cast<int>(s.values.size()); i++) {
             float d = std::abs(s.values[i] - val);
@@ -295,6 +310,11 @@ void ConfScreen::ApplySetting(int setting_idx) {
         config.SetState("lock.autolock", std::to_string(static_cast<int>(val)));
         pda_.ResetAutolockTimer();
         Logger::Info("Autolock: " + s.presets[s.current]);
+    }
+    else if (s.label == "CHATBG") {
+        float val = s.values[s.current];
+        config.SetState("chat.refresh", std::to_string(static_cast<int>(val)));
+        Logger::Info("Chat refresh: " + s.presets[s.current]);
     }
 }
 

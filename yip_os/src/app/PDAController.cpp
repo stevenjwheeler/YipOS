@@ -4,6 +4,7 @@
 #include "screens/HomeScreen.hpp"
 #include "net/NetTracker.hpp"
 #include "net/VRCXData.hpp"
+#include "net/ChatClient.hpp"
 #include "platform/SystemStats.hpp"
 #include "core/Glyphs.hpp"
 #include "core/Config.hpp"
@@ -32,6 +33,16 @@ PDAController::PDAController(PDADisplay& display, NetTracker& net_tracker, Confi
     // Default SPVR devices to unlocked (1) — matches in-game initial state
     for (auto& s : spvr_status_) s.store(1);
     last_activity_ = MonotonicNow();
+
+    // Initialize ChatClient
+    chat_client_ = std::make_unique<ChatClient>();
+    chat_client_->SetEndpoint("https://noisy-sun-1bb7.dan-a7b.workers.dev/messages");
+    // Restore last seen timestamp
+    std::string last_seen = config_.GetState("chat.last_seen");
+    if (!last_seen.empty()) {
+        try { chat_client_->SetLastSeenDate(std::stoll(last_seen)); }
+        catch (...) {}
+    }
 
     // Push home screen as root
     auto home = std::make_unique<HomeScreen>(*this);
@@ -310,6 +321,9 @@ void PDAController::UpdateClock() {
     // Periodically check for new notifications (throttled to 30s)
     RefreshNotifCache();
 
+    // Periodically check for new chat messages
+    RefreshChatCache();
+
     // Autolock check — engage soft lock (overlay, not screen push)
     if (!locked_ && !soft_locked_ && !booting_) {
         std::string autolock_str = config_.GetState("lock.autolock", "30");
@@ -350,11 +364,27 @@ void PDAController::UpdateClock() {
     } else {
         display_.WriteGlyph(2, 7, G_HLINE);
     }
-    // Col 3: notification indicator
-    if (has_unseen_notifs_) {
+    // Col 3: notification indicator (VRCX notifs OR chat unseen)
+    if (has_unseen_notifs_ || has_unseen_chat_) {
         display_.WriteGlyph(3, 7, G_BULLET);
     } else {
         display_.WriteGlyph(3, 7, G_HLINE);
+    }
+
+    // Per-screen live indicators (written at 1Hz so they update without full refresh)
+    if (s) {
+        if (s->name == "HOME") {
+            // CHAT tile [1][4] — "*" at col 38, row 4 (ZONE_ROWS[1])
+            if (has_unseen_chat_) {
+                display_.WriteChar(38, ZONE_ROWS[1], static_cast<int>('*') + INVERT_OFFSET);
+            } else {
+                display_.WriteChar(38, ZONE_ROWS[1], static_cast<int>(' '));
+            }
+        }
+        else if (s->name == "CHAT" && has_unseen_chat_) {
+            // "(NEW MSG)" over the top-left border to signal new messages arrived
+            display_.WriteText(1, 0, "(NEW MSG)");
+        }
     }
 }
 
@@ -502,6 +532,39 @@ void PDAController::RefreshNotifCache() {
     if (now - last_notif_check_ < NOTIF_CHECK_INTERVAL) return;
     last_notif_check_ = now;
     has_unseen_notifs_ = HasUnseenNotifs();
+}
+
+void PDAController::RefreshChatCache() {
+    // Determine interval from NVRAM config
+    std::string refresh_str = config_.GetState("chat.refresh", "60");
+    double interval = CHAT_CHECK_INTERVAL_DEFAULT;
+    try { interval = std::stod(refresh_str); }
+    catch (...) {}
+    if (interval <= 0) return; // OFF
+
+    // Use shorter interval when CHAT screen is active
+    Screen* s = GetCurrentScreen();
+    if (s && s->name == "CHAT") {
+        interval = 15.0;
+    }
+
+    double now = MonotonicNow();
+    if (now - last_chat_check_ < interval) return;
+    last_chat_check_ = now;
+
+    if (chat_client_->FetchMessages()) {
+        has_unseen_chat_ = chat_client_->HasUnseen();
+    }
+}
+
+void PDAController::MarkChatSeen() {
+    auto& msgs = chat_client_->GetMessages();
+    if (!msgs.empty()) {
+        int64_t newest = msgs[0].date;
+        chat_client_->MarkAllSeen(newest);
+        config_.SetState("chat.last_seen", std::to_string(newest));
+    }
+    has_unseen_chat_ = false;
 }
 
 } // namespace YipOS

@@ -102,7 +102,7 @@ TILE_COLS = 5
 TILE_ROWS = 3
 TILE_LABELS = [
     ["STATS", "NET", "-TRACK", "SPVR", "CONF"],
-    ["VRCX", "HEART", "BFI", "DBG", "-----"],
+    ["VRCX", "HEART", "BFI", "DBG", "CHAT"],
     ["CC", "AVTR", "-----", "-----", "LOCK"],
 ]
 CHARS_PER_TILE = COLS // TILE_COLS  # 8
@@ -484,10 +484,10 @@ def layout_conf_p1(buf):
 
 
 def layout_conf_p2(buf):
-    """Config page 2: REFR/ALOCK/REBOOT."""
+    """Config page 2: REFR/ALOCK/CHATBG + REBOOT."""
     _layout_conf_page(buf, "CONFIG 2/2",
-                      ["REFR", "ALOCK", "REBOOT"],
-                      [])
+                      ["REFR", "ALOCK", "CHATBG"],
+                      ["REBOOT"])
 
 
 # ---------------------------------------------------------------------------
@@ -604,6 +604,34 @@ def layout_bfi_param(buf):
     buf.put_status_bar()
 
 
+def layout_chat_consent(buf):
+    """Chat consent gate: warning text + I CONSENT button."""
+    buf.put_frame("CHAT")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_text(2, 2, "Chat with real-world users by")
+    buf.put_text(2, 3, "posting in @YipBoiChat on")
+    buf.put_text(2, 4, "Telegram! WARNING: Content is")
+    buf.put_text(2, 5, "from the Internet and may be")
+    buf.put_text(2, 6, "NSFW or offensive.")
+    buf.put_text(29, 6, "I CONSENT", inverted=True)
+    buf.put_status_bar()
+
+
+def layout_chat_feed(buf):
+    """Chat feed: frame + TR select hint + status bar."""
+    buf.put_frame("CHAT")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
+    buf.put_status_bar()
+
+
+def layout_chat_detail(buf):
+    """Chat detail: frame + back arrow + status bar."""
+    buf.put_frame("CHAT DTL")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_status_bar()
+
+
 SCREEN_LAYOUTS = {
     0: ("HOME", layout_home),
     1: ("STATS", layout_stats),
@@ -629,6 +657,9 @@ SCREEN_LAYOUTS = {
     21: ("LOCK", layout_lock),
     22: ("BFI", layout_bfi),
     23: ("BFI PARAM", layout_bfi_param),
+    24: ("CHAT CONSENT", layout_chat_consent),
+    25: ("CHAT FEED", layout_chat_feed),
+    26: ("CHAT DTL", layout_chat_detail),
 }
 
 

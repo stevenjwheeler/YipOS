@@ -24,6 +24,8 @@ class AudioCapture;
 class VRCAvatarData;
 struct VRCAvatarEntry;
 class OSCManager;
+class ChatClient;
+struct ChatMessage;
 
 class PDAController {
 public:
@@ -79,6 +81,14 @@ public:
     const VRCAvatarEntry* GetSelectedAvatar() const { return selected_avatar_; }
     OSCManager* GetOSCManager() { return osc_; }
     void SetOSCManager(OSCManager* o) { osc_ = o; }
+
+    // Chat integration
+    ChatClient& GetChatClient() { return *chat_client_; }
+    void SetSelectedChat(const ChatMessage* msg) { selected_chat_ = msg; }
+    const ChatMessage* GetSelectedChat() const { return selected_chat_; }
+    bool HasUnseenChatCached() const { return has_unseen_chat_; }
+    void RefreshChatCache();
+    void MarkChatSeen();
 
     // Hard lock (full LOCK screen from home tile)
     void SetLocked(bool locked);
@@ -154,6 +164,8 @@ private:
     VRCAvatarData* avatar_data_ = nullptr;
     const VRCAvatarEntry* selected_avatar_ = nullptr;
     OSCManager* osc_ = nullptr;
+    const ChatMessage* selected_chat_ = nullptr;
+    std::unique_ptr<ChatClient> chat_client_;
 
     // Heart rate (updated from OSC recv thread)
     std::atomic<int> hr_bpm_{0};
@@ -237,6 +249,11 @@ private:
     bool has_unseen_notifs_ = false;
     double last_notif_check_ = 0;
     static constexpr double NOTIF_CHECK_INTERVAL = 30.0;
+
+    // Chat unseen cache
+    bool has_unseen_chat_ = false;
+    double last_chat_check_ = 0;
+    static constexpr double CHAT_CHECK_INTERVAL_DEFAULT = 60.0;
 
     // SPVR device status (thread-safe: updated from OSC recv thread)
     std::array<std::atomic<int>, SPVR_DEVICE_COUNT> spvr_status_{};
