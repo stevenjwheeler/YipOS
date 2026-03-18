@@ -103,6 +103,7 @@ set(YIPOS_SOURCES
     src/screens/ChatDetailScreen.cpp
     src/screens/IMGScreen.cpp
     src/screens/TEXTScreen.cpp
+    src/screens/MediaScreen.cpp
     src/img/VQEncoder.cpp
     src/audio/AudioCapture.cpp
     src/audio/WhisperWorker.cpp
@@ -114,11 +115,13 @@ if(UNIX)
     list(APPEND YIPOS_SOURCES
         src/platform/SystemStats_linux.cpp
         src/audio/AudioCapture_linux.cpp
+        src/media/MediaController_linux.cpp
     )
 elseif(WIN32)
     list(APPEND YIPOS_SOURCES
         src/platform/SystemStats_windows.cpp
         src/audio/AudioCapture_windows.cpp
+        src/media/MediaController_windows.cpp
     )
 endif()
 
@@ -167,5 +170,5 @@ target_link_libraries(yip_os PRIVATE
 if(UNIX)
     target_link_libraries(yip_os PRIVATE pthread dl)
 elseif(WIN32)
-    target_link_libraries(yip_os PRIVATE ws2_32 iphlpapi)
+    target_link_libraries(yip_os PRIVATE ws2_32 iphlpapi windowsapp)
 endif()

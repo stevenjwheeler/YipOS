@@ -26,6 +26,7 @@ struct VRCAvatarEntry;
 class OSCManager;
 class ChatClient;
 struct ChatMessage;
+class MediaController;
 
 class PDAController {
 public:
@@ -81,6 +82,7 @@ public:
     const VRCAvatarEntry* GetSelectedAvatar() const { return selected_avatar_; }
     OSCManager* GetOSCManager() { return osc_; }
     void SetOSCManager(OSCManager* o) { osc_ = o; }
+    MediaController* GetMediaController() { return media_controller_.get(); }
 
     // Assets path (resolved from executable location by main.cpp)
     void SetAssetsPath(const std::string& p) { assets_path_ = p; }
@@ -182,6 +184,7 @@ private:
     OSCManager* osc_ = nullptr;
     const ChatMessage* selected_chat_ = nullptr;
     std::unique_ptr<ChatClient> chat_client_;
+    std::unique_ptr<MediaController> media_controller_;
     std::string assets_path_;
     std::string display_text_;
 

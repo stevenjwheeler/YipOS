@@ -5,6 +5,7 @@
 #include "net/NetTracker.hpp"
 #include "net/VRCXData.hpp"
 #include "net/ChatClient.hpp"
+#include "media/MediaController.hpp"
 #include "platform/SystemStats.hpp"
 #include "core/Glyphs.hpp"
 #include "core/Config.hpp"
@@ -43,6 +44,10 @@ PDAController::PDAController(PDADisplay& display, NetTracker& net_tracker, Confi
         try { chat_client_->SetLastSeenDate(std::stoll(last_seen)); }
         catch (...) {}
     }
+
+    // Initialize media controller
+    media_controller_ = MediaController::Create();
+    if (media_controller_) media_controller_->Initialize();
 
     // Push home screen as root
     auto home = std::make_unique<HomeScreen>(*this);

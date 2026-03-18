@@ -103,7 +103,7 @@ TILE_ROWS = 3
 TILE_LABELS = [
     ["STATS", "NET", "IMG", "SPVR", "CONF"],
     ["VRCX", "HEART", "BFI", "DBG", "CHAT"],
-    ["CC", "AVTR", "TEXT", "-----", "LOCK"],
+    ["CC", "AVTR", "TEXT", "MEDIA", "LOCK"],
 ]
 CHARS_PER_TILE = COLS // TILE_COLS  # 8
 # Column centers for even spacing across 40 cols (contact grid alignment)
@@ -646,6 +646,19 @@ def layout_text(buf):
     buf.put_status_bar()
 
 
+def layout_media(buf):
+    """MEDIA screen: frame + note glyph + control buttons + status bar."""
+    buf.put_frame("MEDIA")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    # Row 1: note glyph (title is dynamic)
+    buf.put_glyph(1, 1, G_NOTE)
+    # Row 4: control buttons (inverted = touchable)
+    buf.put_text(2, 4, "PREV", inverted=True)
+    buf.put_text(18, 4, "PLAY", inverted=True)
+    buf.put_text(34, 4, "NEXT", inverted=True)
+    buf.put_status_bar()
+
+
 SCREEN_LAYOUTS = {
     0: ("HOME", layout_home),
     1: ("STATS", layout_stats),
@@ -676,6 +689,7 @@ SCREEN_LAYOUTS = {
     26: ("CHAT DTL", layout_chat_detail),
     27: ("IMG", layout_img),
     28: ("TEXT", layout_text),
+    29: ("MEDIA", layout_media),
 }
 
 

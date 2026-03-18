@@ -26,6 +26,7 @@
 #include "ChatDetailScreen.hpp"
 #include "IMGScreen.hpp"
 #include "TEXTScreen.hpp"
+#include "MediaScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Glyphs.hpp"
@@ -157,6 +158,7 @@ std::unique_ptr<Screen> CreateScreen(const std::string& name, PDAController& pda
     if (name == "CHAT_DTL") return std::make_unique<ChatDetailScreen>(pda);
     if (name == "IMG") return std::make_unique<IMGScreen>(pda);
     if (name == "TEXT") return std::make_unique<TEXTScreen>(pda);
+    if (name == "MEDIA") return std::make_unique<MediaScreen>(pda);
     return nullptr;
 }
 
