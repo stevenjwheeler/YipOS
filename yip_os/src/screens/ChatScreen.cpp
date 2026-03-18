@@ -33,6 +33,7 @@ ChatScreen::ChatScreen(PDAController& pda) : Screen(pda) {
     } else {
         mode_ = CONSENT;
         macro_index = CONSENT_MACRO;
+        consent_shown_at_ = std::chrono::steady_clock::now();
     }
 }
 
@@ -215,7 +216,16 @@ std::string ChatScreen::FormatRelativeTime(int64_t date) {
 bool ChatScreen::OnInput(const std::string& key) {
     if (mode_ == CONSENT) {
         // Touch 53 (col 5, row 3) = I CONSENT button
+        // Require CONSENT_DELAY_SEC before accepting, so stale/queued
+        // inputs from navigation can't auto-accept consent.
         if (key == "53") {
+            double elapsed = std::chrono::duration<double>(
+                std::chrono::steady_clock::now() - consent_shown_at_).count();
+            if (elapsed < CONSENT_DELAY_SEC) {
+                Logger::Debug("Chat consent ignored (too soon: " +
+                              std::to_string(elapsed) + "s)");
+                return true;
+            }
             pda_.GetConfig().SetState("chat.consent", "1");
             Logger::Info("Chat consent given");
 

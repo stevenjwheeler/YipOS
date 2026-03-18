@@ -3,6 +3,7 @@
 #include "Screen.hpp"
 #include "net/ChatClient.hpp"
 #include <vector>
+#include <chrono>
 
 namespace YipOS {
 
@@ -33,9 +34,12 @@ private:
     static constexpr int ROWS_PER_PAGE = 6;
     static constexpr int CONSENT_MACRO = 24;
     static constexpr int FEED_MACRO = 25;
+    static constexpr double CONSENT_DELAY_SEC = 2.0;
 
     int PageCount() const;
     int ItemCountOnPage() const;
+
+    std::chrono::steady_clock::time_point consent_shown_at_{};
 };
 
 } // namespace YipOS

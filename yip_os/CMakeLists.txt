@@ -128,7 +128,27 @@ target_include_directories(yip_os PRIVATE
 )
 
 find_package(OpenGL REQUIRED)
-find_package(CURL REQUIRED)
+
+if(WIN32)
+    # Build curl from source on Windows (no system package)
+    set(BUILD_CURL_EXE OFF CACHE BOOL "" FORCE)
+    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+    set(CURL_USE_SCHANNEL ON CACHE BOOL "" FORCE)
+    set(CURL_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+    set(CURL_ZLIB OFF CACHE BOOL "" FORCE)
+    set(CURL_DISABLE_LDAP ON CACHE BOOL "" FORCE)
+    set(CURL_DISABLE_LDAPS ON CACHE BOOL "" FORCE)
+    set(USE_LIBIDN2 OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+        curl
+        GIT_REPOSITORY https://github.com/curl/curl.git
+        GIT_TAG curl-8_7_1
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(curl)
+else()
+    find_package(CURL REQUIRED)
+endif()
 
 target_link_libraries(yip_os PRIVATE
     imgui
