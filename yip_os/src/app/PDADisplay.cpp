@@ -37,8 +37,15 @@ void PDADisplay::SendParam(const std::string& name, bool value) {
 }
 
 void PDADisplay::MoveCursor(int col, float row) {
-    float nx = (col + 0.5f) / static_cast<float>(COLS);
-    float ny = RowToY(row);
+    float nx, ny;
+    if (current_mode_ == MODE_BITMAP) {
+        // Bitmap mode: 32x32 grid, linear normalization (no Y calibration)
+        nx = (col + 0.5f) / 32.0f;
+        ny = (row + 0.5f) / 32.0f;
+    } else {
+        nx = (col + 0.5f) / static_cast<float>(COLS);
+        ny = RowToY(row);
+    }
     if (nx != hw_cursor_x_) {
         SendParam("WT_CursorX", nx);
         hw_cursor_x_ = nx;
@@ -117,8 +124,8 @@ void PDADisplay::WriteHLine(int col, float row, int length) {
 
 void PDADisplay::SetMode(Mode mode) {
     Mode prev = current_mode_;
-    SendParam("WT_ScaleA", mode == MODE_MACRO);
-    SendParam("WT_ScaleB", mode == MODE_CLEAR);
+    SendParam("WT_ScaleA", mode == MODE_MACRO || mode == MODE_BITMAP);
+    SendParam("WT_ScaleB", mode == MODE_CLEAR || mode == MODE_BITMAP);
     current_mode_ = mode;
     if (prev == MODE_MACRO && mode == MODE_TEXT) {
         // The Write Head quad renders every frame. After macro→text switch,

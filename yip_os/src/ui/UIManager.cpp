@@ -54,6 +54,15 @@ bool UIManager::Initialize(const std::string& title) {
     glfwMakeContextCurrent(window_);
     glfwSwapInterval(1); // vsync
 
+    // File drop callback
+    glfwSetWindowUserPointer(window_, this);
+    glfwSetDropCallback(window_, [](GLFWwindow* w, int count, const char** paths) {
+        auto* self = static_cast<UIManager*>(glfwGetWindowUserPointer(w));
+        if (self && self->drop_callback_ && count > 0) {
+            self->drop_callback_(paths[0]);
+        }
+    });
+
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
         Logger::Error("Failed to initialize GLAD");
         return false;
@@ -180,6 +189,10 @@ void UIManager::Render(PDAController& pda, Config& config, OSCManager& osc) {
         }
         if (ImGui::BeginTabItem("Avatar")) {
             RenderAvatarTab(pda, config);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Text")) {
+            RenderTextTab(pda, config, osc);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("NVRAM")) {
@@ -741,6 +754,61 @@ void UIManager::RenderAvatarTab(PDAController& pda, Config& config) {
         config.vrc_osc_path = avtr_path_buf_.data();
         if (!config_path_.empty()) config.SaveToFile(config_path_);
     }
+}
+
+// --- Text Tab ---
+void UIManager::RenderTextTab(PDAController& pda, Config& config, OSCManager& osc) {
+    ImGui::Text("Text Display");
+    ImGui::TextDisabled("Text appears live on the PDA TEXT screen.");
+
+    ImGui::Separator();
+
+    if (!text_buf_initialized_) {
+        std::string saved = config.GetState("text.content");
+        std::snprintf(text_buf_.data(), text_buf_.size(), "%s", saved.c_str());
+        text_vrc_chatbox_ = config.GetState("text.vrc_chatbox") == "1";
+        text_buf_initialized_ = true;
+        // Initialize display text from saved
+        pda.SetDisplayText(saved);
+    }
+
+    if (!text_vrc_chatbox_) {
+        ImGui::Text("Message");
+        ImGui::InputTextMultiline("##text_content", text_buf_.data(), text_buf_.size(),
+                                  ImVec2(-1, 120));
+
+        // Push text to PDAController live on every frame
+        pda.SetDisplayText(std::string(text_buf_.data()));
+
+        if (ImGui::Button("Save")) {
+            config.SetState("text.content", std::string(text_buf_.data()));
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled("Persist to config");
+        ImGui::SameLine();
+        if (ImGui::Button("Clear")) {
+            text_buf_[0] = '\0';
+            pda.SetDisplayText("");
+        }
+    } else {
+        // Chatbox mode: show received text read-only
+        std::string chatbox = osc.GetChatboxText();
+        if (!chatbox.empty()) {
+            ImGui::TextWrapped("Chatbox: %s", chatbox.c_str());
+        } else {
+            ImGui::TextDisabled("Waiting for /chatbox/input on listen port...");
+        }
+    }
+
+    ImGui::Separator();
+
+    ImGui::Text("VRChat ChatBox");
+    ImGui::TextDisabled("Display text from external apps that send /chatbox/input.");
+    if (ImGui::Checkbox("Use VRC ChatBox input", &text_vrc_chatbox_)) {
+        config.SetState("text.vrc_chatbox", text_vrc_chatbox_ ? "1" : "0");
+    }
+    ImGui::TextDisabled("When enabled, listens for /chatbox/input on the OSC listen port");
+    ImGui::TextDisabled("and displays that text instead of the manual input above.");
 }
 
 // --- NVRAM Tab ---

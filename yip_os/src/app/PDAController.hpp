@@ -82,6 +82,18 @@ public:
     OSCManager* GetOSCManager() { return osc_; }
     void SetOSCManager(OSCManager* o) { osc_ = o; }
 
+    // Assets path (resolved from executable location by main.cpp)
+    void SetAssetsPath(const std::string& p) { assets_path_ = p; }
+    const std::string& GetAssetsPath() const { return assets_path_; }
+
+    // Display text (set from UIManager, read by TEXTScreen)
+    void SetDisplayText(const std::string& text) { display_text_ = text; }
+    const std::string& GetDisplayText() const { return display_text_; }
+
+    // Image drop support (thread-safe: UI thread → main thread)
+    void SetDroppedImagePath(const std::string& path);
+    std::string ConsumeDroppedImagePath();
+
     // Chat integration
     ChatClient& GetChatClient() { return *chat_client_; }
     void SetSelectedChat(const ChatMessage* msg) { selected_chat_ = msg; }
@@ -138,6 +150,10 @@ private:
     std::queue<std::string> input_queue_;
     std::mutex input_mutex_;
 
+    // Image drop path (thread-safe: UI thread → main thread)
+    std::string dropped_image_path_;
+    std::mutex drop_mutex_;
+
     // Debounce
     std::unordered_map<std::string, double> last_trigger_;
     static constexpr double DEBOUNCE_MS = 300.0;
@@ -166,6 +182,8 @@ private:
     OSCManager* osc_ = nullptr;
     const ChatMessage* selected_chat_ = nullptr;
     std::unique_ptr<ChatClient> chat_client_;
+    std::string assets_path_;
+    std::string display_text_;
 
     // Heart rate (updated from OSC recv thread)
     std::atomic<int> hr_bpm_{0};

@@ -232,7 +232,13 @@ void PDAController::ProcessInput() {
         }
 
         // TL = back (pop screen stack toward home)
+        // Unless the current screen wants to handle it (e.g. IMG display mode)
         if (key == "TL") {
+            Screen* current = GetCurrentScreen();
+            if (current && current->handle_back) {
+                current->OnInput(key);
+                continue;
+            }
             Logger::Info("TL: Back");
             PopScreen();
             continue;
@@ -555,6 +561,18 @@ void PDAController::RefreshChatCache() {
     if (chat_client_->FetchMessages()) {
         has_unseen_chat_ = chat_client_->HasUnseen();
     }
+}
+
+void PDAController::SetDroppedImagePath(const std::string& path) {
+    std::lock_guard<std::mutex> lock(drop_mutex_);
+    dropped_image_path_ = path;
+}
+
+std::string PDAController::ConsumeDroppedImagePath() {
+    std::lock_guard<std::mutex> lock(drop_mutex_);
+    std::string path;
+    std::swap(path, dropped_image_path_);
+    return path;
 }
 
 void PDAController::MarkChatSeen() {

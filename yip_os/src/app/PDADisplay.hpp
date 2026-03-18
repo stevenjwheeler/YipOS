@@ -12,7 +12,7 @@ class OSCManager;
 
 class PDADisplay {
 public:
-    enum Mode { MODE_TEXT = 0, MODE_MACRO = 1, MODE_CLEAR = 2 };
+    enum Mode { MODE_TEXT = 0, MODE_MACRO = 1, MODE_CLEAR = 2, MODE_BITMAP = 3 };
 
     PDADisplay(OSCManager& osc, ScreenBuffer& screen,
                float y_offset = 0.0f, float y_scale = 1.0f, float y_curve = 1.0f,
@@ -36,6 +36,7 @@ public:
     void SetTextMode();
     void SetMacroMode();
     void SetClearMode();
+    void SetBitmapMode() { SetMode(MODE_BITMAP); }
     void StampMacro(int macro_index);
     void ClearScreen();
 

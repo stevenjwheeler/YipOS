@@ -224,6 +224,7 @@ int main(int argc, char* argv[]) {
             if (!fs::exists(assets)) assets = exe_dir / "assets";
             if (!fs::exists(assets)) assets = "assets";
             ui.SetAssetsPath(assets.string());
+            pda.SetAssetsPath(assets.string());
         }
         if (!ui.Initialize("YipOS")) {
             YipOS::Logger::Critical("Failed to initialize UI");
@@ -233,6 +234,11 @@ int main(int argc, char* argv[]) {
         }
 
         ui.SetConfigPath(configPath);
+
+        // Wire up file drop → IMG screen
+        ui.SetDropCallback([&pda](const std::string& path) {
+            pda.SetDroppedImagePath(path);
+        });
 
         // Initialize display with optional boot animation
         InitDisplay(display, pda, ui, config, osc);

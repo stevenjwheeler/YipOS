@@ -101,6 +101,9 @@ set(YIPOS_SOURCES
     src/net/VRCAvatarData.cpp
     src/screens/ChatScreen.cpp
     src/screens/ChatDetailScreen.cpp
+    src/screens/IMGScreen.cpp
+    src/screens/TEXTScreen.cpp
+    src/img/VQEncoder.cpp
     src/audio/AudioCapture.cpp
     src/audio/WhisperWorker.cpp
     src/ui/UIManager.cpp

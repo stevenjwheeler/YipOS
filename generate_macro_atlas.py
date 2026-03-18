@@ -101,9 +101,9 @@ ZONE_ROWS = [
 TILE_COLS = 5
 TILE_ROWS = 3
 TILE_LABELS = [
-    ["STATS", "NET", "-TRACK", "SPVR", "CONF"],
+    ["STATS", "NET", "IMG", "SPVR", "CONF"],
     ["VRCX", "HEART", "BFI", "DBG", "CHAT"],
-    ["CC", "AVTR", "-----", "-----", "LOCK"],
+    ["CC", "AVTR", "TEXT", "-----", "LOCK"],
 ]
 CHARS_PER_TILE = COLS // TILE_COLS  # 8
 # Column centers for even spacing across 40 cols (contact grid alignment)
@@ -632,6 +632,20 @@ def layout_chat_detail(buf):
     buf.put_status_bar()
 
 
+def layout_img(buf):
+    """IMG list: frame + back arrow + status bar. SEL arrow is dynamic."""
+    buf.put_frame("IMG")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_status_bar()
+
+
+def layout_text(buf):
+    """TEXT screen: frame + status bar. Content is dynamic."""
+    buf.put_frame("TEXT")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_status_bar()
+
+
 SCREEN_LAYOUTS = {
     0: ("HOME", layout_home),
     1: ("STATS", layout_stats),
@@ -660,6 +674,8 @@ SCREEN_LAYOUTS = {
     24: ("CHAT CONSENT", layout_chat_consent),
     25: ("CHAT FEED", layout_chat_feed),
     26: ("CHAT DTL", layout_chat_detail),
+    27: ("IMG", layout_img),
+    28: ("TEXT", layout_text),
 }
 
 

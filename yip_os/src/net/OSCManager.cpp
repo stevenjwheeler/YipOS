@@ -237,6 +237,50 @@ void OSCManager::SendString(const std::string& path, const std::string& value) {
     }
 }
 
+void OSCManager::SendChatbox(const std::string& text, bool send_immediately) {
+    if (!SocketValid(send_socket_) || !server_addr_) return;
+
+    // /chatbox/input takes two args: string (s) + bool (T/F)
+    // oscpp has no native bool arg, so we build the packet manually.
+    try {
+        const char* path = "/chatbox/input";
+        size_t addr_len = std::strlen(path) + 1;
+        size_t addr_padded = (addr_len + 3) & ~3u;
+
+        // Type tag: ",sT\0" or ",sF\0" = 4 bytes
+        constexpr size_t tag_padded = 4;
+
+        // String arg: text + null, padded to 4
+        size_t str_len = text.size() + 1;
+        size_t str_padded = (str_len + 3) & ~3u;
+
+        size_t total = addr_padded + tag_padded + str_padded;
+        if (total > send_buffer_.size()) return;
+
+        std::memset(send_buffer_.data(), 0, total);
+        std::memcpy(send_buffer_.data(), path, std::strlen(path));
+
+        char* tag = send_buffer_.data() + addr_padded;
+        tag[0] = ',';
+        tag[1] = 's';
+        tag[2] = send_immediately ? 'T' : 'F';
+
+        char* str_data = tag + tag_padded;
+        std::memcpy(str_data, text.c_str(), text.size());
+
+        sendto(send_socket_,
+               send_buffer_.data(),
+               static_cast<int>(total),
+               0,
+               reinterpret_cast<struct sockaddr*>(server_addr_),
+               sizeof(sockaddr_in));
+
+        LogSend("/chatbox/input", 0.0f);
+    } catch (const std::exception& e) {
+        Logger::Error("OSC SendChatbox error: " + std::string(e.what()));
+    }
+}
+
 void OSCManager::SetInputHandler(InputHandler handler) {
     input_handler_ = std::move(handler);
 }
@@ -268,6 +312,20 @@ void OSCManager::ReceiveThread() {
                 std::string address = msg.address();
                 OSCPP::Server::ArgStream args(msg.args());
 
+                // Intercept /chatbox/input string messages
+                if (address == "/chatbox/input") {
+                    if (!args.atEnd() && args.tag() == 's') {
+                        const char* text = args.string();
+                        {
+                            std::lock_guard<std::mutex> lock(chatbox_mutex_);
+                            chatbox_text_ = text ? text : "";
+                            chatbox_new_ = true;
+                        }
+                        Logger::Debug("OSC chatbox: " + chatbox_text_);
+                    }
+                    continue;
+                }
+
                 float value = 0.0f;
                 if (!args.atEnd()) {
                     char tag = args.tag();
@@ -298,6 +356,18 @@ void OSCManager::ReceiveThread() {
         }
     }
     Logger::Info("OSC receive thread stopped");
+}
+
+std::string OSCManager::GetChatboxText() const {
+    std::lock_guard<std::mutex> lock(chatbox_mutex_);
+    return chatbox_text_;
+}
+
+bool OSCManager::HasNewChatboxText() {
+    std::lock_guard<std::mutex> lock(chatbox_mutex_);
+    bool was_new = chatbox_new_;
+    chatbox_new_ = false;
+    return was_new;
 }
 
 void OSCManager::LogSend(const std::string& path, float value) {

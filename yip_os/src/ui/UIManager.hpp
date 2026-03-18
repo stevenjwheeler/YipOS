@@ -5,6 +5,7 @@
 #include <deque>
 #include <cstdint>
 #include <array>
+#include <functional>
 
 struct GLFWwindow;
 
@@ -32,6 +33,7 @@ public:
 
     void SetConfigPath(const std::string& path) { config_path_ = path; }
     void SetAssetsPath(const std::string& path) { assets_path_ = path; }
+    void SetDropCallback(std::function<void(const std::string&)> cb) { drop_callback_ = std::move(cb); }
     void SetInitialSize(int w, int h) { initial_width_ = w; initial_height_ = h; }
     void SaveWindowSize(Config& config);
 
@@ -42,6 +44,7 @@ private:
     void RenderVRCXTab(PDAController& pda, Config& config);
     void RenderCCTab(PDAController& pda, Config& config);
     void RenderAvatarTab(PDAController& pda, Config& config);
+    void RenderTextTab(PDAController& pda, Config& config, OSCManager& osc);
     void RenderNVRAMTab(PDAController& pda, Config& config);
     void RenderLogTab();
 
@@ -70,6 +73,14 @@ private:
     // Simulation state (ticked every frame, even when OSC tab hidden)
     bool sim_hr_auto_ = false;
     bool sim_bfi_auto_ = false;
+
+    // Text tab state
+    std::array<char, 1024> text_buf_ = {};
+    bool text_buf_initialized_ = false;
+    bool text_vrc_chatbox_ = false;
+
+    // File drop callback
+    std::function<void(const std::string&)> drop_callback_;
 
     // Window size
     int initial_width_ = 720;
