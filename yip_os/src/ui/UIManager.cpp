@@ -430,7 +430,7 @@ void UIManager::RenderOSCTab(PDAController& pda, Config& config, OSCManager& osc
         ImGui::TextDisabled("HTTP port: %d  |  OSC listen port: %d",
             osc_query_->GetHTTPPort(), osc_query_->GetOSCPort());
         ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f),
-            "Note: Close Unity if open — its OSC listener can block VRChat discovery.");
+            "Note: Close Unity if open -- its OSC listener can block VRChat discovery.");
     } else if (config.osc_query_enabled) {
         ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.3f, 1.0f),
             "OSC Query failed to start — using static ports");
