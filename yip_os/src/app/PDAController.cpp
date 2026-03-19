@@ -221,10 +221,16 @@ void PDAController::ProcessInput() {
             } else {
                 // Wrong button — flash the lock icon and re-render the
                 // current screen so VRC display artifacts get cleared.
+                // Skip re-render for screens that own the display (e.g. IMG
+                // bitmap mode) — a full StartRender would destroy their
+                // progress and mode settings.
                 lock_flash_until_ = MonotonicNow() + LOCK_FLASH_DURATION;
                 Screen* current = GetCurrentScreen();
-                if (current) {
+                if (current && !current->skip_clock) {
                     StartRender(current);
+                } else {
+                    display_.CancelBuffered();
+                    display_.BeginBuffered();
                 }
                 // Write flashed lock icon on top of the freshly rendered screen
                 display_.WriteChar(2, 7, G_LOCK_INV);

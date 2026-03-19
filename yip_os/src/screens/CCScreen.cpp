@@ -176,19 +176,17 @@ void CCScreen::Update() {
 
     const std::string& line = pending_lines_.front();
 
-    // If starting a new line, clear the row first
-    if (line_char_pos_ == 0) {
-        for (int c = LEFT_COL; c <= RIGHT_COL; c++) {
-            display_.WriteChar(c, cursor_row_, 32);
-        }
-    }
-
-    // Write remaining chars of this line
-    while (line_char_pos_ < static_cast<int>(line.size())) {
-        char ch = line[line_char_pos_];
+    // Write text chars, then pad remainder with spaces to clear old content.
+    // This avoids wasting writes on blank columns before the text.
+    int col = LEFT_COL;
+    for (int i = 0; i < static_cast<int>(line.size()); i++) {
+        char ch = line[i];
         int char_idx = (ch >= 32 && ch <= 126) ? static_cast<int>(ch) : 32;
-        display_.WriteChar(LEFT_COL + line_char_pos_, cursor_row_, char_idx);
-        line_char_pos_++;
+        display_.WriteChar(col++, cursor_row_, char_idx);
+    }
+    // Clear only the remaining columns after the text
+    while (col <= RIGHT_COL) {
+        display_.WriteChar(col++, cursor_row_, 32);
     }
 
     // Line done — advance
