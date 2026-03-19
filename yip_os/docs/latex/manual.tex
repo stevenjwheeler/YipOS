@@ -601,6 +601,7 @@ Yip OS boots into the Home screen after displaying a brief boot graphic. The Hom
 
 \subsection{Tile Grid}
 
+\textbf{Page 1:}
 \begin{center}
 {\small
 \begin{tabular}{c|ccccc}
@@ -608,14 +609,29 @@ Yip OS boots into the Home screen after displaying a brief boot graphic. The Hom
   & \textbf{Col 1} & \textbf{Col 2} & \textbf{Col 3} & \textbf{Col 4} & \textbf{Col 5} \\
   \midrule
   \textbf{Row 1} & STATS & NET & IMG & SPVR & CONF \\[0.3em]
-  \textbf{Row 2} & VRCX & HEART & BFI & DBG & CHAT \\
-  \textbf{Row 3} & CC & AVTR & TEXT & ----- & LOCK \\
+  \textbf{Row 2} & VRCX & HEART & BFI & STONK & CHAT \\
+  \textbf{Row 3} & CC & AVTR & TEXT & MEDIA & LOCK \\
   \bottomrule
 \end{tabular}
 }
 \end{center}
 
-Active tiles are displayed in \textbf{inverted text} (touchable). Tiles marked ``-----'' are reserved for future programs and do not respond to input.
+\textbf{Page 2:}
+\begin{center}
+{\small
+\begin{tabular}{c|ccccc}
+  \toprule
+  & \textbf{Col 1} & \textbf{Col 2} & \textbf{Col 3} & \textbf{Col 4} & \textbf{Col 5} \\
+  \midrule
+  \textbf{Row 1} & DBG & ----- & ----- & ----- & ----- \\[0.3em]
+  \textbf{Row 2} & ----- & ----- & ----- & ----- & ----- \\
+  \textbf{Row 3} & ----- & ----- & ----- & ----- & ----- \\
+  \bottomrule
+\end{tabular}
+}
+\end{center}
+
+Active tiles are displayed in \textbf{inverted text} (touchable). Tiles marked ``-----'' are reserved for future programs and do not respond to input. Use \textbf{PG UP / PG DWN} (ML / BL buttons) to switch between pages. A page indicator (e.g. ``1/2'') is shown in the status bar.
 
 These programs have functions that can run in the background and are launchable from the Home screen.
 
@@ -922,6 +938,47 @@ The screen shows the \textbf{track title}, \textbf{artist name}, and current pla
   \item[PAUS / PLAY] Toggle play/pause.
   \item[NEXT] Skip to the next track.
 \end{description}
+
+\newpage
+\subsection{STONK --- Stock \& Crypto Monitor}
+\label{sec:stonk}
+
+Displays real-time stock and cryptocurrency price graphs on the PDA. Data is fetched from Yahoo Finance via HTTP (no API key required).
+
+\manualfig[0.55\textwidth]{STONK.png}{The STONK program displaying a price graph with ticker, price, and percentage change.}
+
+The main STONK screen shows a historical price graph for the selected ticker, with a scale bar on the left, current price and percentage change on the info line (row 6).
+
+\subsubsection{Controls}
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[Ticker (inverted, row 6 left)] Tap to open the ticker list screen, where you can select a different symbol.
+  \item[Time Window (inverted, row 6 right)] Tap to cycle through time windows: 1DY, 1WK, 1MO, 6MO, 1YR. Data is re-fetched for the selected range.
+  \item[Joystick] Cycle through watched symbols without opening the list screen.
+\end{description}
+
+\subsubsection{Ticker List}
+
+A paginated list of your configured symbols. Use the joystick to highlight a symbol, then press SEL (TR) to select it. The display returns to the graph view with the new ticker.
+
+\manualfig[0.55\textwidth]{STONK PICK.png}{The STONK ticker list showing available symbols with a selection cursor.}
+
+\subsubsection{Configuration}
+
+Configure STONK in the \textbf{Stocks} tab of the desktop companion app:
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[Enable] Toggle stock data fetching on/off.
+  \item[Symbol List] Add or remove ticker symbols. Default: DOGE, BTC, AAPL, NVDA, GME.
+  \item[Refresh Interval] How often to fetch new data (60s--900s, default 300s).
+  \item[Fetch Now] Manually trigger an immediate data fetch.
+\end{description}
+
+Cryptocurrency symbols (BTC, DOGE, ETH, etc.) are automatically suffixed with \texttt{-USD} for the Yahoo Finance API. Stock symbols (AAPL, NVDA, GME, etc.) are passed through as-is.
+
+\begin{notebox}
+  STONK requires an internet connection. Data is fetched via HTTP, not OSC. Be mindful of API rate limits --- do not set the refresh interval below 60 seconds.
+\end{notebox}
 
 \newpage
 \subsection{Future Programs}

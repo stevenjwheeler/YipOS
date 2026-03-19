@@ -18,17 +18,23 @@ constexpr int CHARS_PER_TILE = COLS / TILE_COLS; // 8
 // (2*i+1) * (COLS / (TILE_COLS*2)) for i in 0..4 → [4, 12, 20, 28, 36]
 constexpr std::array<int, 5> TILE_CENTERS = {4, 12, 20, 28, 36};
 
-// Tile labels [row][col]
+// Tile labels [page][row][col]
 constexpr int MAX_LABEL_LEN = 6;
+constexpr int HOME_PAGES = 2;
 struct TileLabel {
     char text[MAX_LABEL_LEN + 1];
 };
 
 // clang-format off
-constexpr TileLabel TILE_LABELS[TILE_ROWS][TILE_COLS] = {
-    {{"STATS"}, {"NET"},   {"IMG"},   {"SPVR"},  {"CONF"}},
-    {{"VRCX"},  {"HEART"}, {"BFI"},   {"DBG"},   {"CHAT"}},
-    {{"CC"},    {"AVTR"},  {"TEXT"},  {"MEDIA"}, {"LOCK"}},
+constexpr TileLabel TILE_LABELS[HOME_PAGES][TILE_ROWS][TILE_COLS] = {
+    // Page 0
+    {{{"STATS"}, {"NET"},   {"IMG"},   {"SPVR"},  {"CONF"}},
+     {{"VRCX"},  {"HEART"}, {"BFI"},   {"STONK"}, {"CHAT"}},
+     {{"CC"},    {"AVTR"},  {"TEXT"},  {"MEDIA"}, {"LOCK"}}},
+    // Page 1
+    {{{"DBG"},   {"-----"}, {"-----"}, {"-----"}, {"-----"}},
+     {{"-----"}, {"-----"}, {"-----"}, {"-----"}, {"-----"}},
+     {{"-----"}, {"-----"}, {"-----"}, {"-----"}, {"-----"}}},
 };
 // clang-format on
 
@@ -97,6 +103,8 @@ constexpr uint8_t G_CHECK      = 141;
 constexpr uint8_t G_XMARK      = 142;
 constexpr uint8_t G_TRACKER    = 143;
 constexpr uint8_t G_LOCK_INV   = 144;
+constexpr uint8_t G_UPPER_SHADE = 145; // ▀ dithered (50%)
+constexpr uint8_t G_LOWER_SHADE = 146; // ▄ dithered (50%)
 
 // Boot macro glyph index
 constexpr int BOOT_MACRO_INDEX = 5;

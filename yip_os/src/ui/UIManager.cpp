@@ -9,6 +9,7 @@
 #include "net/OSCQueryServer.hpp"
 #include "net/VRCXData.hpp"
 #include "net/VRCAvatarData.hpp"
+#include "net/StockClient.hpp"
 #include "audio/AudioCapture.hpp"
 #include "audio/WhisperWorker.hpp"
 #include "screens/Screen.hpp"
@@ -194,6 +195,10 @@ void UIManager::Render(PDAController& pda, Config& config, OSCManager& osc) {
         }
         if (ImGui::BeginTabItem("Text")) {
             RenderTextTab(pda, config, osc);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Stocks")) {
+            RenderStocksTab(pda, config);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("NVRAM")) {
@@ -839,6 +844,119 @@ void UIManager::RenderTextTab(PDAController& pda, Config& config, OSCManager& os
     }
     ImGui::TextDisabled("When enabled, listens for /chatbox/input on the OSC listen port");
     ImGui::TextDisabled("and displays that text instead of the manual input above.");
+}
+
+// --- Stocks Tab ---
+void UIManager::RenderStocksTab(PDAController& pda, Config& config) {
+    ImGui::Text("Stock & Crypto Monitor (STONK)");
+    ImGui::TextDisabled("Real-time price graphs on the PDA. Data from Yahoo Finance (no API key).");
+    ImGui::TextDisabled("Crypto symbols (BTC, DOGE, etc.) are auto-suffixed with -USD.");
+
+    ImGui::Separator();
+
+    // Enable checkbox
+    bool enabled = config.GetState("stonk.enabled", "0") == "1";
+    if (ImGui::Checkbox("Enable STONK", &enabled)) {
+        config.SetState("stonk.enabled", enabled ? "1" : "0");
+    }
+
+    ImGui::Separator();
+
+    // Symbol list
+    ImGui::Text("Watched Symbols");
+    std::string sym_str = config.GetState("stonk.symbols", "DOGE,BTC,AAPL,NVDA,GME");
+
+    // Parse current symbols
+    std::vector<std::string> symbols;
+    {
+        size_t start = 0;
+        while (start < sym_str.size()) {
+            size_t end = sym_str.find(',', start);
+            if (end == std::string::npos) end = sym_str.size();
+            std::string s = sym_str.substr(start, end - start);
+            while (!s.empty() && s.front() == ' ') s.erase(s.begin());
+            while (!s.empty() && s.back() == ' ') s.pop_back();
+            if (!s.empty()) symbols.push_back(s);
+            start = end + 1;
+        }
+    }
+
+    // Display list with remove buttons
+    int remove_idx = -1;
+    for (int i = 0; i < static_cast<int>(symbols.size()); i++) {
+        ImGui::BulletText("%s", symbols[i].c_str());
+        ImGui::SameLine(200);
+        std::string btn_id = "Remove##sym_" + std::to_string(i);
+        if (ImGui::SmallButton(btn_id.c_str())) {
+            remove_idx = i;
+        }
+    }
+    if (remove_idx >= 0) {
+        symbols.erase(symbols.begin() + remove_idx);
+        std::string new_str;
+        for (int i = 0; i < static_cast<int>(symbols.size()); i++) {
+            if (i > 0) new_str += ',';
+            new_str += symbols[i];
+        }
+        config.SetState("stonk.symbols", new_str);
+    }
+
+    // Add symbol
+    ImGui::InputText("##add_sym", stonk_symbol_buf_.data(), stonk_symbol_buf_.size());
+    ImGui::SameLine();
+    if (ImGui::Button("Add")) {
+        std::string new_sym(stonk_symbol_buf_.data());
+        // Trim and uppercase
+        while (!new_sym.empty() && new_sym.front() == ' ') new_sym.erase(new_sym.begin());
+        while (!new_sym.empty() && new_sym.back() == ' ') new_sym.pop_back();
+        for (auto& c : new_sym) c = static_cast<char>(toupper(c));
+        if (!new_sym.empty()) {
+            symbols.push_back(new_sym);
+            std::string new_str;
+            for (int i = 0; i < static_cast<int>(symbols.size()); i++) {
+                if (i > 0) new_str += ',';
+                new_str += symbols[i];
+            }
+            config.SetState("stonk.symbols", new_str);
+            stonk_symbol_buf_[0] = '\0';
+        }
+    }
+
+    ImGui::Separator();
+
+    // Refresh interval
+    ImGui::Text("Refresh Interval");
+    std::string refresh_str = config.GetState("stonk.refresh", "300");
+    int refresh_sec = 300;
+    try { refresh_sec = std::stoi(refresh_str); }
+    catch (...) {}
+    if (ImGui::SliderInt("Seconds##stonk_refresh", &refresh_sec, 60, 900)) {
+        config.SetState("stonk.refresh", std::to_string(refresh_sec));
+    }
+    ImGui::TextDisabled("How often to fetch new price data (60s - 900s).");
+
+    // Manual fetch
+    if (ImGui::Button("Fetch Now")) {
+        pda.ReloadStockSymbols();
+        auto* client = pda.GetStockClient();
+        if (client) {
+            std::string window = config.GetState("stonk.window", "1MO");
+            client->FetchAll(window);
+        }
+    }
+
+    ImGui::Separator();
+
+    // Show current data if available
+    auto* client = pda.GetStockClient();
+    if (client && !client->GetQuotes().empty()) {
+        ImGui::Text("Cached Data");
+        for (auto& q : client->GetQuotes()) {
+            float pct = 0;
+            if (q.prev_close > 0) pct = ((q.current_price - q.prev_close) / q.prev_close) * 100.0f;
+            ImGui::Text("  %s: $%.4f (%+.1f%%)", q.symbol.c_str(), q.current_price, pct);
+        }
+    }
 }
 
 // --- NVRAM Tab ---

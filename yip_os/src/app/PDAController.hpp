@@ -27,6 +27,7 @@ class OSCManager;
 class ChatClient;
 struct ChatMessage;
 class MediaController;
+class StockClient;
 
 class PDAController {
 public:
@@ -83,6 +84,11 @@ public:
     OSCManager* GetOSCManager() { return osc_; }
     void SetOSCManager(OSCManager* o) { osc_ = o; }
     MediaController* GetMediaController() { return media_controller_.get(); }
+
+    // Stock/crypto client
+    StockClient* GetStockClient() { return stock_client_.get(); }
+    void RefreshStockCache();
+    void ReloadStockSymbols();
 
     // Assets path (resolved from executable location by main.cpp)
     void SetAssetsPath(const std::string& p) { assets_path_ = p; }
@@ -185,6 +191,7 @@ private:
     const ChatMessage* selected_chat_ = nullptr;
     std::unique_ptr<ChatClient> chat_client_;
     std::unique_ptr<MediaController> media_controller_;
+    std::unique_ptr<StockClient> stock_client_;
     std::string assets_path_;
     std::string display_text_;
 
@@ -275,6 +282,10 @@ private:
     bool has_unseen_chat_ = false;
     double last_chat_check_ = 0;
     static constexpr double CHAT_CHECK_INTERVAL_DEFAULT = 60.0;
+
+    // Stock cache
+    double last_stock_check_ = 0;
+    static constexpr double STOCK_CHECK_INTERVAL_DEFAULT = 300.0;
 
     // SPVR device status (thread-safe: updated from OSC recv thread)
     std::array<std::atomic<int>, SPVR_DEVICE_COUNT> spvr_status_{};

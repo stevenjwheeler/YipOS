@@ -47,6 +47,7 @@ private:
     void RenderCCTab(PDAController& pda, Config& config);
     void RenderAvatarTab(PDAController& pda, Config& config);
     void RenderTextTab(PDAController& pda, Config& config, OSCManager& osc);
+    void RenderStocksTab(PDAController& pda, Config& config);
     void RenderNVRAMTab(PDAController& pda, Config& config);
     void RenderLogTab();
 
@@ -80,6 +81,9 @@ private:
     std::array<char, 1024> text_buf_ = {};
     bool text_buf_initialized_ = false;
     bool text_vrc_chatbox_ = false;
+
+    // Stocks tab state
+    std::array<char, 32> stonk_symbol_buf_ = {};
 
     // OSC Query server (optional, for status display)
     OSCQueryServer* osc_query_ = nullptr;

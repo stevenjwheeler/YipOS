@@ -102,8 +102,14 @@ TILE_COLS = 5
 TILE_ROWS = 3
 TILE_LABELS = [
     ["STATS", "NET", "IMG", "SPVR", "CONF"],
-    ["VRCX", "HEART", "BFI", "DBG", "CHAT"],
+    ["VRCX", "HEART", "BFI", "STONK", "CHAT"],
     ["CC", "AVTR", "TEXT", "MEDIA", "LOCK"],
+]
+
+TILE_LABELS_P2 = [
+    ["DBG", "-----", "-----", "-----", "-----"],
+    ["-----", "-----", "-----", "-----", "-----"],
+    ["-----", "-----", "-----", "-----", "-----"],
 ]
 CHARS_PER_TILE = COLS // TILE_COLS  # 8
 # Column centers for even spacing across 40 cols (contact grid alignment)
@@ -227,6 +233,45 @@ def layout_home(buf):
             buf.put_text(start_col, row, display_label, inverted=is_active)
         buf.put_glyph(COLS - 1, row, G_VLINE)
 
+    buf.put_status_bar()
+
+
+def layout_home_p2(buf):
+    """Home screen page 2: borders + title + page 2 tile labels."""
+    buf.put_frame("YIP OS")
+
+    for ty in range(TILE_ROWS):
+        row = round(ZONE_ROWS[ty])
+        buf.put_glyph(0, row, G_VLINE)
+        for tx in range(TILE_COLS):
+            label = TILE_LABELS_P2[ty][tx]
+            is_active = label[0] != '-'
+            display_label = label if is_active else label.lstrip('-')
+            center = TILE_CENTERS[tx]
+            start_col = center - len(display_label) // 2
+            buf.put_text(start_col, row, display_label, inverted=is_active)
+        buf.put_glyph(COLS - 1, row, G_VLINE)
+
+    # Up arrow on left border (page up available)
+    buf.put_glyph(0, 3, G_UP)
+
+    buf.put_status_bar()
+
+
+def layout_stonk(buf):
+    """STONK graph screen: frame + scale area + info row + status bar."""
+    buf.put_frame("STONK")
+    # Scale bar area (cols 1-4) — dynamic, but show placeholder
+    buf.put_text(1, 1, "----")
+    buf.put_text(1, 5, "----")
+    buf.put_status_bar()
+
+
+def layout_stonk_list(buf):
+    """STONK list screen: frame + TR select hint + status bar."""
+    buf.put_frame("STONK")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
     buf.put_status_bar()
 
 
@@ -690,6 +735,9 @@ SCREEN_LAYOUTS = {
     27: ("IMG", layout_img),
     28: ("TEXT", layout_text),
     29: ("MEDIA", layout_media),
+    30: ("HOME P2", layout_home_p2),
+    31: ("STONK", layout_stonk),
+    32: ("STONK LIST", layout_stonk_list),
 }
 
 

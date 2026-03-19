@@ -18,7 +18,9 @@ public:
 
 private:
     void WriteTile(int tx, int ty);
+    void RenderPageIndicators();
 
+    int page_ = 0;
     std::array<std::array<bool, Glyphs::TILE_COLS>, Glyphs::TILE_ROWS> tile_highlighted_{};
 };
 

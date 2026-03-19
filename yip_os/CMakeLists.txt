@@ -105,6 +105,9 @@ set(YIPOS_SOURCES
     src/screens/IMGScreen.cpp
     src/screens/TEXTScreen.cpp
     src/screens/MediaScreen.cpp
+    src/screens/StonkScreen.cpp
+    src/screens/StonkListScreen.cpp
+    src/net/StockClient.cpp
     src/img/VQEncoder.cpp
     src/audio/AudioCapture.cpp
     src/audio/WhisperWorker.cpp

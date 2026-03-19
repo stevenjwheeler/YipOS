@@ -27,6 +27,8 @@
 #include "IMGScreen.hpp"
 #include "TEXTScreen.hpp"
 #include "MediaScreen.hpp"
+#include "StonkScreen.hpp"
+#include "StonkListScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Glyphs.hpp"
@@ -159,6 +161,8 @@ std::unique_ptr<Screen> CreateScreen(const std::string& name, PDAController& pda
     if (name == "IMG") return std::make_unique<IMGScreen>(pda);
     if (name == "TEXT") return std::make_unique<TEXTScreen>(pda);
     if (name == "MEDIA") return std::make_unique<MediaScreen>(pda);
+    if (name == "STONK") return std::make_unique<StonkScreen>(pda);
+    if (name == "STONK_LIST") return std::make_unique<StonkListScreen>(pda);
     return nullptr;
 }
 

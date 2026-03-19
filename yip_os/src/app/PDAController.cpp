@@ -5,6 +5,7 @@
 #include "net/NetTracker.hpp"
 #include "net/VRCXData.hpp"
 #include "net/ChatClient.hpp"
+#include "net/StockClient.hpp"
 #include "media/MediaController.hpp"
 #include "platform/SystemStats.hpp"
 #include "core/Glyphs.hpp"
@@ -48,6 +49,10 @@ PDAController::PDAController(PDADisplay& display, NetTracker& net_tracker, Confi
     // Initialize media controller
     media_controller_ = MediaController::Create();
     if (media_controller_) media_controller_->Initialize();
+
+    // Initialize stock client (always created, gated by stonk.enabled at fetch time)
+    stock_client_ = std::make_unique<StockClient>();
+    ReloadStockSymbols();
 
     // Push home screen as root
     auto home = std::make_unique<HomeScreen>(*this);
@@ -348,6 +353,9 @@ void PDAController::UpdateClock() {
     // Periodically check for new chat messages
     RefreshChatCache();
 
+    // Periodically refresh stock data
+    RefreshStockCache();
+
     // Autolock check — engage soft lock (overlay, not screen push)
     if (!locked_ && !soft_locked_ && !booting_) {
         std::string autolock_str = config_.GetState("lock.autolock", "30");
@@ -601,6 +609,58 @@ void PDAController::MarkChatSeen() {
         config_.SetState("chat.last_seen", std::to_string(newest));
     }
     has_unseen_chat_ = false;
+}
+
+void PDAController::ReloadStockSymbols() {
+    if (!stock_client_) return;
+    std::string sym_str = config_.GetState("stonk.symbols", "DOGE,BTC,AAPL,NVDA,GME");
+    std::vector<std::string> symbols;
+    size_t start = 0;
+    while (start < sym_str.size()) {
+        size_t end = sym_str.find(',', start);
+        if (end == std::string::npos) end = sym_str.size();
+        std::string s = sym_str.substr(start, end - start);
+        while (!s.empty() && s.front() == ' ') s.erase(s.begin());
+        while (!s.empty() && s.back() == ' ') s.pop_back();
+        if (!s.empty()) symbols.push_back(s);
+        start = end + 1;
+    }
+    stock_client_->SetSymbols(symbols);
+}
+
+void PDAController::RefreshStockCache() {
+    if (!stock_client_) return;
+    if (config_.GetState("stonk.enabled", "0") != "1") return;
+
+    // Re-sync symbol list from config each cycle (UI may have changed it)
+    ReloadStockSymbols();
+
+    std::string refresh_str = config_.GetState("stonk.refresh", "300");
+    double interval = STOCK_CHECK_INTERVAL_DEFAULT;
+    try { interval = std::stod(refresh_str); }
+    catch (...) {}
+    if (interval <= 0) return;
+
+    // Use a much shorter interval when the STONK screen is active,
+    // and fetch immediately (interval=0) if no data exists yet.
+    Screen* s = GetCurrentScreen();
+    bool on_stonk = s && (s->name == "STONK" || s->name == "STONK_LIST");
+    if (on_stonk) {
+        std::string sel = config_.GetState("stonk.selected", "DOGE");
+        auto* quote = stock_client_->GetQuote(sel);
+        if (!quote || quote->history.empty()) {
+            interval = 0;  // fetch right now — no data yet
+        } else {
+            interval = 30.0;  // faster refresh while viewing
+        }
+    }
+
+    double now = MonotonicNow();
+    if (interval > 0 && now - last_stock_check_ < interval) return;
+    last_stock_check_ = now;
+
+    std::string window = config_.GetState("stonk.window", "1MO");
+    stock_client_->FetchAll(window);
 }
 
 } // namespace YipOS

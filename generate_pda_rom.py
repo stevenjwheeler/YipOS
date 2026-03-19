@@ -401,8 +401,20 @@ def build_custom_icons():
     # 144: inverted lock (same bitmap as 133, rendered inverted)
     icons[144] = icons[133][:]
 
-    # 145-159: reserved (blank for now — can add more icons later)
-    for i in range(145, 160):
+    # 145: shaded upper half-block (dithered top half, empty bottom)
+    icons[145] = [
+        0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ]
+
+    # 146: shaded lower half-block (empty top, dithered bottom)
+    icons[146] = [
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA,
+    ]
+
+    # 147-159: reserved (blank for now — can add more icons later)
+    for i in range(147, 160):
         icons[i] = [0x00] * 16
 
     return icons
