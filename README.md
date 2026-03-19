@@ -170,4 +170,4 @@ To combat this, **VRCX, AVTR, and CHAT are disabled by default** and require you
 
 ## License
 
-Copyright (c) 2026 Foxipso. All rights reserved. See [LICENSE](yip_os/installer/LICENSE.txt) for details.
+This project is licensed under the Apache 2.0 License. See [LICENSE](LICENSE) for details.
