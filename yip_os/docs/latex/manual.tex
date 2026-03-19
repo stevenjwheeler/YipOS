@@ -260,7 +260,7 @@ Wrist-Mounted CRT Terminal --- Model YB-1}
 \vspace{0.5em}
 {\small\ttfamily
 For use with the Yip OS Desktop Companion Application\\[0.3em]
-Revision 1.0.1}
+Revision 1.0.2}
 
 \vspace{0.4em}
 
@@ -338,7 +338,7 @@ Via the combination of these two prefabs, you can easily have a real computer on
 \section{SETUP}
 \label{sec:setup}
 
-\subsection{Unpacking Your Yip-Boi}
+\subsection{Unboxing Your Yip-Boi}
 
 Carefully remove your Yip-Boi PDA from its anti-static packaging. Before discarding any packing material, check that all of the following items are present:
 
@@ -356,22 +356,47 @@ If any of the above items are missing, contact your authorized Foxipso dealer im
 
 \subsection{Unity Installation}
 
-Carefully unpack your Yip-Boi \texttt{.zip} file and drag the \texttt{.unitypackage} into your Unity project. FBM recommends creating a backup with ALCOM or VCC.
+Carefully unzip your Yip-Boi \texttt{.zip} file and drag the \texttt{.unitypackage} into your Unity project. FBM recommends creating a backup with ALCOM or VCC.
 
 \begin{warnbox}[NOTE]
 The Williams Tube rendering method requires \textbf{27 bits of parameter space}. This is fairly heavy for an asset, and you may want to make a version of your avatar that sacrifices some of your other heavy assets.
 \end{warnbox}
 
 \begin{enumerate}[leftmargin=2em]
-  \item Navigate to \texttt{Foxipso/Assets/Yip-Boi} in your Project View.
-  \item Drag \texttt{1. Williams Tube} onto your avatar in the Hierarchy View, so that it's a child.
-  \item Drag \texttt{2. Yip-Boi} in the same manner.
-  \item In the Hierarchy View, enable \texttt{2. Yip-Boi->Container}. Then drag \texttt{2. Yip-Boi} onto your avatar's left lower arm, above the wrist. Position and scale.
-  \item If necessary, adjust fitment by clicking on \texttt{2. Yip-Boi->Container->Wrist CRT} and adjust the \texttt{BlendShapes} in the Inspector.
-  \item You can proceed to testing, or if you're ready to upload: click \texttt{Williams Tube->Play Mode Debugger (Removes On Upload)}, right-click \texttt{Williams Tube OSC Receiver} and \texttt{Sender} in the Inspector and click \texttt{Remove Component}. These facilitate testing and can easily be re-added by right-clicking them and clicking \texttt{Removed Component $\rightarrow$ Revert}.
+  \item Open \texttt{Foxipso/Assets/Yip-Boi} in the Project View and drag the \texttt{Yip-Boi} prefab onto your avatar.
+  \item Locate \texttt{Yip-Boi->Container} in the Hierarchy View and position and scale it as desired.
 \end{enumerate}
 
-Testing is accomplished after installing and configuring Yip OS below. See Section~\ref{sec:companion} for the companion software.
+You can now upload your avatar and test in VRChat. See Section~\ref{sec:companion} for the companion software.
+
+\subsection{Testing in Unity}
+\label{sec:testing}
+
+It's possible to test the asset in Unity using lyuma's Av3Emulator and OSC mode, or the included OSC scripts. This is convenient for tweaking the look of the CRT or familiarizing yourself with the operation of the device prior to being in VR.
+
+Testing with the included OSC scripts is easiest, and the use of Av3Emulator is a bit out of scope. To test:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Recommended: Disable VRCFury in Play Mode by going to \texttt{Tools->VRCFury->Settings->Enable VRCFury in Play Mode}. This makes testing faster and means you don't have to navigate menus in Gesture Manager or Av3Emulator.
+  \item Locate \texttt{Yip-Boi->Williams Tube->Play Mode Debugger (Removes On Upload)} in the Hierarchy View. In the Inspector, change the Tag from ``EditorOnly'' to ``Untagged''. This allows the OSC scripts to run in Play mode.
+  \item Enter Play mode and look at the Yip-Boi. Start Yip OS.
+\end{enumerate}
+
+You should now see the boot screen followed by the Home screen. After a timeout, you'll see the lock icon appear in the status bar on the bottom-left of the Yip OS screen. You can disable lock mode by pressing \key{SEL} three times. See Section~\ref{sec:conf} to learn about the CONF program and ALOCK.
+
+You can interact with Yip OS using virtual buttons. In the Status tab of the Yip OS desktop application, click on the buttons to simulate VRChat interaction, or press the \texttt{1}--\texttt{5}, \texttt{Q}--\texttt{T}, \texttt{A}--\texttt{G}, and \texttt{F1}--\texttt{F5} keys, as indicated in the application.
+
+Try various programs and familiarize yourself with navigation. See Section~\ref{sec:display} for more information on the user interface. See Section~\ref{sec:programs} for the operation and configuration of the programs. Any changes you make here will persist in NVRAM and be available in-game. See Section~\ref{sec:nvram} for information on the NVRAM.
+
+Now would be a good time to configure the path to your VRCX SQLite database, if desired (see Section~\ref{sec:vrcx}). The same is true for the CC program (see Section~\ref{sec:cc}) and confirming avatar management works, if desired (see Section~\ref{sec:avtr}).
+
+\subsubsection{Customizing the CRT}
+
+If you wish to customize the look of the CRT, click on \texttt{Yip-Boi->Container->Wrist CRT} in the Hierarchy View and scroll down to the \texttt{YB-1 (Material)} section. Click to unlock the shader, if necessary. Scroll down to \texttt{Special FX->CRT Screen} and experiment with changes there.
+
+Recommended parameters to try: Font Color, Background Color, Static Noise, Jitter, Phosphor Persistence, Flickering, Horizontal Sync, and Bloom Glow.
+
+\manualfig[0.4\textwidth]{SHADER OPTIONS.png}{CRT Screen shader options in the YB-1 material Inspector.}
 
 \subsection{Connecting to VRChat}
 
@@ -426,6 +451,10 @@ The Yip-Boi PDA has two types of input: \textbf{physical buttons} on the device 
 \begin{notebox}
 All input currently requires either your left or right index fingers. A possible future improvement is to require a specific gesture on either or both paws, if users end up causing too many errant inputs. In the meantime, the \textbf{LOCK} program (see Section~\ref{sec:lock}) and the \textbf{AUTOLOCK} feature in CONF (see Section~\ref{sec:conf}) are recommended to prevent accidental inputs.
 \end{notebox}
+
+\begin{warnbox}
+\textbf{ALOCK (Autolock) is enabled by default.} If you find that your inputs aren't registering, check the bottom-left of the status bar for the lock icon. If visible, press \key{SEL} three times rapidly to unlock. You can adjust or disable autolock timing in the CONF program (see Section~\ref{sec:conf}).
+\end{warnbox}
 
 \subsubsection{Disabling the Beep}
 
@@ -516,7 +545,7 @@ The bottom border (row 7) contains, from left to right:
     When visible, indicates the autolock is active. When \textbf{inverted}, it shows that input was attempted but prevented by lock mode. Press \key{SEL} three times rapidly to unlock. See Section~\ref{sec:lock}.
 
   \item[Notification dot (col 3)]
-    A bullet ($\bullet$) indicates a program has a notification to display. Go BACK to the Home screen and tap the program name that has an \texttt{*} next to it to navigate to the notification. Currently only VRCX generates notifications.
+    A bullet ($\bullet$) indicates a program has a notification to display. Go BACK to the Home screen and tap the program name that has an \texttt{*} next to it to navigate to the notification. Currently VRCX and CHAT generate notifications.
 
   \item[Page indicator]
     On multi-page screens, displays the current page and total (e.g., ``1/5'').
@@ -562,9 +591,9 @@ Yip OS boots into the Home screen after displaying a brief boot graphic. The Hom
   \toprule
   & \textbf{Col 1} & \textbf{Col 2} & \textbf{Col 3} & \textbf{Col 4} & \textbf{Col 5} \\
   \midrule
-  \textbf{Row 1} & STATS & NET & TRACK & SPVR & CONF \\[0.3em]
-  \textbf{Row 2} & VRCX & HEART & MAP & DBG & ----- \\
-  \textbf{Row 3} & CC & AVTR & ----- & ----- & LOCK \\
+  \textbf{Row 1} & STATS & NET & IMG & SPVR & CONF \\[0.3em]
+  \textbf{Row 2} & VRCX & HEART & BFI & DBG & CHAT \\
+  \textbf{Row 3} & CC & AVTR & TEXT & ----- & LOCK \\
   \bottomrule
 \end{tabular}
 }
@@ -630,7 +659,7 @@ A real-time heartbeat monitor and graph via OSC. Uses the same oscilloscope swee
 \manualfig[0.55\textwidth]{HEART.png}{The HEART program displaying heartbeat data.}
 
 \begin{notebox}
-The Yip-Boi will be capable of receiving BPM data from an OSC-based heart rate monitor or other external source. When no data source is connected, simulated data is displayed for demonstration.
+The Yip-Boi receives BPM data from an OSC-based heart rate monitor or other external source. You can test the display using the \textbf{Simulate OSC Input} feature in the desktop app's OSC tab, which sends a configurable heart rate value at 1~Hz.
 \end{notebox}
 
 \newpage
@@ -669,6 +698,7 @@ Setting labels are inverted (touchable). Tap to cycle through values. Settings p
   NVRAM & CLR / SUR? / CLR & Clear stored settings \\
   REFR & OFF / 5 / 10 / 30 & Auto-refresh interval (sec) \\
   ALOCK & OFF / 10S / 30S / 1M & Autolock timeout \\
+  CHATBG & OFF / 30S / 1M / 5M & CHAT background poll rate \\
   REBOOT & GO! & Restart the system \\
   \bottomrule
 \end{tabular}
@@ -676,7 +706,7 @@ Setting labels are inverted (touchable). Tap to cycle through values. Settings p
 \end{center}
 
 \begin{notebox}
-\textbf{REFR} is recommended to be left \textbf{OFF} for best performance. \textbf{ALOCK} is recommended to be enabled to prevent accidental inputs.
+\textbf{REFR} is recommended to be left \textbf{OFF} for best performance. \textbf{ALOCK} is enabled by default to prevent accidental inputs. \textbf{CHATBG} sets how frequently the CHAT program checks for new messages in the background (see Section~\ref{sec:chat}).
 \end{notebox}
 
 \begin{notebox}
@@ -756,11 +786,92 @@ Locks out all input until you tap \key{SEL} three times. Useful for preventing a
 When locked, the lock icon appears in the status bar (col 2). If someone attempts input while locked, the lock icon briefly \textbf{inverts} (flashes) to indicate the input was blocked.
 
 \newpage
+\subsection{BFI --- BrainFlow Monitor}
+\label{sec:bfi}
+
+Integration with \textbf{BFiVRC} by ChilloutCharles (\url{https://github.com/ChilloutCharles/BrainflowsIntoVRChat}), which connects the BrainFlow Library to EEG hardware and outputs brain--computer interface parameters via OSC.
+
+\manualfig[0.55\textwidth]{BFIVRC.png}{The BFI program displaying a live parameter graph with oscilloscope sweep rendering.}
+
+The BFI program displays a real-time graph of the selected BFiVRC parameter, using the same oscilloscope sweep rendering as NET and HEART. The current parameter name is shown at the bottom-left, and a \textbf{CONF} button (inverted, touchable) is available to access BFI-specific settings.
+
+\manualfig[0.55\textwidth]{BFI PARAM.png}{BFI parameter selection --- use \key{JOYSTICK} to cycle, \key{SEL} to select.}
+
+Press \key{SEL} from the graph view to open the parameter selection list. Use \key{JOYSTICK} to cycle through available BFiVRC parameters (e.g., FocusAvg, FocusPosAvg, FocusLeft, etc.) and \key{SEL} to select which parameter to graph.
+
+\begin{notebox}
+You do not need EEG hardware to preview the BFI display. The Yip OS desktop app provides a \textbf{Simulate OSC Input} feature (in the OSC tab) that sends synthetic sine wave data for all 26 BFiVRC parameters, as well as simulated heart rate data.
+\end{notebox}
+
+\manualfig[0.55\textwidth]{Simulate OSC input for heartrate and BFI.png}{The Simulate OSC Input panel in the desktop app --- generates test data for BFI and heart rate.}
+
+\newpage
+\subsection{CHAT --- Telegram Group Chat}
+\label{sec:chat}
+
+A live group chat viewer for \textbf{@YipBoiChat} on Telegram. People who purchased the Yip-Boi asset get access to this Telegram group, and anyone with the device can view messages live in VRChat directly on their wrist.
+
+\manualfig[0.55\textwidth]{CHAT.png}{The CHAT program displaying recent messages with sender names and timestamps.}
+
+On first launch, CHAT displays a consent screen. Once accepted, the program fetches messages from a Cloudflare Worker endpoint using a simple HTTP request --- no Telegram account, API key, or credentials are required to read the public chat room.
+
+Messages are displayed in a scrollable list. Use \key{JOYSTICK} to move through the list and \key{SEL} to view the full message, sender name, and timestamp.
+
+\manualfig[0.55\textwidth]{CHAT DTL.png}{CHAT detail view --- shows the full message text, sender, and timestamp.}
+
+When new messages arrive, a notification dot ($\bullet$) appears in the status bar and an \texttt{*} appears next to CHAT on the Home screen. If you're already viewing the message list, \textbf{(NEW MSG)} appears in the top-left corner.
+
+The background poll rate for checking new messages is configurable via \textbf{CHATBG} in the CONF program (see Section~\ref{sec:conf}). Options are OFF, 30S, 1M, and 5M.
+
+\newpage
+\subsection{TEXT --- Text Display}
+\label{sec:text}
+
+Displays arbitrary text on the CRT, entered via the \textbf{Text} tab in the Yip OS desktop app. Text is rendered with a rolling refresh, optimized to only rewrite characters that have changed.
+
+\manualfig[0.55\textwidth]{TEXT.png}{The TEXT program with no text set --- prompts you to use the Text tab in the desktop app.}
+
+\manualfig[0.55\textwidth]{OSC Text tab.png}{The Text Display panel in the desktop app --- enter a message and it appears live on the PDA.}
+
+The desktop app's Text tab also supports \textbf{VRChat ChatBox input}: enable ``Use VRC ChatBox input'' to listen for \texttt{/chatbox/input} messages on the OSC listen port, displaying text from any external chatbox program instead of the manual entry field.
+
+\newpage
+\subsection{IMG --- Bitmap Image Display}
+\label{sec:img}
+
+Displays arbitrary images on the CRT in a \textbf{bitmap rendering mode}. Place image files in the \texttt{assets/images} folder in the Yip OS installation directory, then select them from the list.
+
+\manualfig[0.55\textwidth]{IMG.png}{The IMG program showing a list of available images. Use \key{JOYSTICK} to cycle, \key{SEL} to display.}
+
+\manualfig[0.55\textwidth]{IMG display doge.png}{An image rendered in bitmap mode --- drawn character-by-character like a dot matrix printer.}
+
+Images are drawn in two passes: a quick initial pass, followed by a slower refresh pass that fills in any missing or corrupted characters. The display continually refreshes to maintain image quality. Press \key{BACK} to exit the image view and return to the file list.
+
+\manualfig[0.55\textwidth]{IMG no images.png}{The IMG program when no images are found in the images directory.}
+
+If no images are found, a message is displayed indicating the expected path. Simply add image files to the \texttt{assets/images} directory and relaunch the program.
+
+\newpage
+\subsection{MEDIA --- Media Player}
+\label{sec:media}
+
+Displays the currently playing media on your computer and provides playback controls. Uses the Windows Global System Media Transport Controls (GSMTC) to detect and control any media player on your system.
+
+\manualfig[0.55\textwidth]{MEDIA.png}{The MEDIA program showing the current track with playback controls.}
+
+The screen shows the \textbf{track title}, \textbf{artist name}, and current playback state. Three touchscreen buttons are available:
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[PREV] Skip to the previous track.
+  \item[PAUS / PLAY] Toggle play/pause.
+  \item[NEXT] Skip to the next track.
+\end{description}
+
+\newpage
 \subsection{Future Programs}
 
 \begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
   \item[TRACK] Tracker battery levels and connection status via SteamVR/OpenVR.
-  \item[MUSIC] Play/pause, rewind, fast-forward, and view information about media currently playing on your computer.
   \item[MAP] A camera-based VRChat overhead minimap.
   \item[DBG] An alignment grid useful for program developers, or to test data transmission integrity for remote users.
 \end{description}
@@ -838,7 +949,11 @@ The visual sense of the render texture is built up as the write head scans aroun
 
 \subsection{Is a bitmap mode possible?}
 
-A bitmap mode is entirely feasible and proven, but comes at the expense of even more synced parameters, and thus wasn't included by Foxipso Business Machines in a 1.0 release. However, its appearance is much like a dot matrix printer or fax machine, and it'd be quite humorous to see some thermal paper slowly emerge from a machine with an image truly transmitted from a computer into VRChat, even if ephemerally.
+Yes! The \textbf{IMG} program (see Section~\ref{sec:img}) renders arbitrary images in a bitmap display mode. Its appearance is much like a dot matrix printer or fax machine --- images are drawn character-by-character, each one truly transmitted from your computer into VRChat. Place images in the \texttt{assets/images} directory and select them from the list.
+
+\subsection{My inputs aren't registering!}
+
+\textbf{ALOCK} (autolock) is enabled by default. Check the bottom-left of the status bar --- if you see the lock icon, press \key{SEL} three times rapidly to unlock. You can adjust the autolock timeout or disable it entirely in the CONF program (see Section~\ref{sec:conf}).
 
 \subsection{Can I make my own programs?}
 
@@ -1085,6 +1200,7 @@ Foxipso Business Machines warrants the Yip-Boi PDA (Model YB-1) against defects 
   \item Damage caused by exposure to water, fire, or the VRChat particle limit
   \item Embarrassment resulting from other players reading your system stats
   \item Other players changing your avatar via the AVTR program
+  \item Distressing content received via the CHAT program from other Yip-Boi owners
 \end{itemize}
 
 To obtain warranty service, contact your authorized Foxipso dealer with proof of purchase and a detailed description of the defect. Do \textit{not} attempt to service the unit yourself. There are no user-serviceable parts inside. We checked.
@@ -1096,7 +1212,7 @@ To obtain warranty service, contact your authorized Foxipso dealer with proof of
 Me here at Foxipso Business Machines hopes that you'll enjoy\\
 using your new Yip-Boi arm-worn computer!\\[0.5em]
 FOXIPSO BUSINESS MACHINES, INC.\\[0.3em]
-Part No. FBM-YB-001-EN Rev.1.0.1 --- 2026}
+Part No. FBM-YB-001-EN Rev.1.0.2 --- 2026}
 \end{center}
 
 \end{document}
