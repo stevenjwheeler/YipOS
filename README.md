@@ -55,7 +55,7 @@ None of the logical operation of the device actually happens in an animation con
 - **Autolock** to prevent accidental inputs
 - **PC speaker** beep on input (customizable or mutable)
 - **OSCQuery** for automatic service discovery--no manual port configuration needed
-- **79-page** period-accurate operator's manual
+- **79-page** period-accurate [operator's manual](yip_os/docs/latex/manual.pdf)
 
 ## Programs
 
@@ -120,7 +120,7 @@ You need a compatible avatar. You can use the Yip-Boi avatar prefab, available o
 
 > **Note:** The Williams Tube rendering method requires **27 bits of parameter space**. This is fairly heavy for an asset, and you may want to make a version of your avatar that sacrifices some of your other heavy assets.
 
-For testing in Unity without uploading, see the Operator's Manual (included with the asset) on Play Mode testing with the included OSC scripts.
+For testing in Unity without uploading, see the [Operator's Manual](yip_os/docs/latex/manual.pdf) on Play Mode testing with the included OSC scripts.
 
 ## Building From Source
 
