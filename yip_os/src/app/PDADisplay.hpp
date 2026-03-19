@@ -70,6 +70,7 @@ public:
 private:
     void SleepMs(float seconds);
     void SendParam(const std::string& name, float value);
+    void SendParam(const std::string& name, int value);
     void SendParam(const std::string& name, bool value);
     void SendWrite(int col, float row, int char_idx, bool sleep = true);
 

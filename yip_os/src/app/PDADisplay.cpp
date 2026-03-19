@@ -32,6 +32,10 @@ void PDADisplay::SendParam(const std::string& name, float value) {
     osc_.SendFloat(std::string(PARAM_PREFIX) + name, value);
 }
 
+void PDADisplay::SendParam(const std::string& name, int value) {
+    osc_.SendInt(std::string(PARAM_PREFIX) + name, value);
+}
+
 void PDADisplay::SendParam(const std::string& name, bool value) {
     osc_.SendBool(std::string(PARAM_PREFIX) + name, value);
 }
@@ -58,8 +62,8 @@ void PDADisplay::MoveCursor(int col, float row) {
 
 void PDADisplay::SendWrite(int col, float row, int char_idx, bool sleep) {
     MoveCursor(col, row);
-    SendParam("WT_CharLo", static_cast<float>(char_idx & 0xFF));
-    SendParam("WT_CharHi", static_cast<float>((char_idx >> 8) & 0xFF));
+    SendParam("WT_CharLo", char_idx & 0xFF);
+    SendParam("WT_CharHi", (char_idx >> 8) & 0xFF);
     last_char_idx_ = char_idx;
     total_writes_++;
     last_write_time_ = std::chrono::steady_clock::now();
@@ -135,7 +139,7 @@ void PDADisplay::SetMode(Mode mode) {
         // mode switch — the write head lands at the corner with a space.
         SendParam("WT_CursorX", 0.0125f);  // col 0
         SendParam("WT_CursorY", 0.0f);
-        SendParam("WT_CharLo", 32.0f);     // space
+        SendParam("WT_CharLo", 32);          // space
         hw_cursor_x_ = -1.0f;
         hw_cursor_y_ = -1.0f;
     }
@@ -149,7 +153,7 @@ void PDADisplay::SetClearMode() { SetMode(MODE_CLEAR); }
 void PDADisplay::StampMacro(int macro_index) {
     SendParam("WT_CursorX", 0.5f);
     SendParam("WT_CursorY", 0.5f);
-    SendParam("WT_CharLo", static_cast<float>(macro_index));
+    SendParam("WT_CharLo", macro_index);
     SleepMs(write_delay_);
     // Invalidate cached cursor so next text write resends both axes.
     hw_cursor_x_ = -1.0f;
@@ -163,7 +167,7 @@ void PDADisplay::ClearScreen() {
     SendParam("WT_CursorY", 0.5f);
     hw_cursor_x_ = -1.0f;
     hw_cursor_y_ = -1.0f;
-    SendParam("WT_CharLo", 0.0f);
+    SendParam("WT_CharLo", 0);
     SleepMs(0.3f);
     screen_.Clear();
 }
