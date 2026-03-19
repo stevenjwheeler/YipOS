@@ -338,25 +338,9 @@ Via the combination of these two prefabs, you can easily have a real computer on
 \section{SETUP}
 \label{sec:setup}
 
-\subsection{Unboxing Your Yip-Boi}
-
-Carefully remove your Yip-Boi PDA from its anti-static packaging. Before discarding any packing material, check that all of the following items are present:
-
-\begin{enumerate}[leftmargin=2em]
-  \item One (1) Yip-Boi PDA unit (Model YB-1) with integrated wrist strap
-  \item One (1) Desktop Companion Software disk (3.5'' HD floppy, 1.44 MB)
-  \item One (1) Character ROM disk (3.5'' HD floppy, labeled ``YB-CHARROM Rev.A'')
-  \item One (1) OSC interface cable (USB-to-Ether, 6 ft.)
-  \item One (1) CR2032 NVRAM backup battery (pre-installed)
-  \item This manual
-  \item Warranty registration card
-\end{enumerate}
-
-If any of the above items are missing, contact your authorized Foxipso dealer immediately for a replacement. Do \textit{not} attempt to operate the unit without the Character ROM disk installed.
-
 \subsection{Unity Installation}
 
-Carefully unzip your Yip-Boi \texttt{.zip} file and drag the \texttt{.unitypackage} into your Unity project. FBM recommends creating a backup with ALCOM or VCC.
+Unzip your Yip-Boi \texttt{.zip} file and drag the \texttt{.unitypackage} into your Unity project. FBM recommends creating a backup with ALCOM or VCC.
 
 \begin{warnbox}[NOTE]
 The Williams Tube rendering method requires \textbf{27 bits of parameter space}. This is fairly heavy for an asset, and you may want to make a version of your avatar that sacrifices some of your other heavy assets.
@@ -385,11 +369,35 @@ Testing with the included OSC scripts is easiest, and the use of Av3Emulator is 
 
 You should now see the boot screen followed by the Home screen. After a timeout, you'll see the lock icon appear in the status bar on the bottom-left of the Yip OS screen. You can disable lock mode by pressing \key{SEL} three times. See Section~\ref{sec:conf} to learn about the CONF program and ALOCK.
 
-You can interact with Yip OS using virtual buttons. In the Status tab of the Yip OS desktop application, click on the buttons to simulate VRChat interaction, or press the \texttt{1}--\texttt{5}, \texttt{Q}--\texttt{T}, \texttt{A}--\texttt{G}, and \texttt{F1}--\texttt{F5} keys, as indicated in the application.
+\subsubsection{Virtual Buttons}
 
-Try various programs and familiarize yourself with navigation. See Section~\ref{sec:display} for more information on the user interface. See Section~\ref{sec:programs} for the operation and configuration of the programs. Any changes you make here will persist in NVRAM and be available in-game. See Section~\ref{sec:nvram} for information on the NVRAM.
+You can interact with Yip OS using virtual buttons in the \textbf{Status} tab of the Yip OS desktop application. Click the on-screen buttons to simulate VRChat interaction, or use the following keyboard shortcuts:
 
-Now would be a good time to configure the path to your VRCX SQLite database, if desired (see Section~\ref{sec:vrcx}). The same is true for the CC program (see Section~\ref{sec:cc}) and confirming avatar management works, if desired (see Section~\ref{sec:avtr}).
+\begin{center}
+{\small
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Keys} & \textbf{Row} & \textbf{Touch Zones} \\
+  \midrule
+  \key{1}--\key{5} & Row 1 & Top row (5 zones) \\
+  \key{Q}--\key{T} & Row 2 & Middle row (5 zones) \\
+  \key{A}--\key{G} & Row 3 & Bottom row (5 zones) \\
+  \key{F1}--\key{F5} & --- & Physical buttons \\
+  \bottomrule
+\end{tabular}
+}
+\end{center}
+
+\subsubsection{Exploring Programs}
+
+Try various programs and familiarize yourself with navigation. See Section~\ref{sec:display} for the user interface, Section~\ref{sec:programs} for program operation, and Section~\ref{sec:nvram} for NVRAM. Any changes you make here will persist and be available in-game.
+
+Now would be a good time to configure:
+\begin{itemize}[leftmargin=2em, nosep]
+  \item Your \textbf{VRCX} SQLite database path (see Section~\ref{sec:vrcx})
+  \item The \textbf{CC} closed captions program (see Section~\ref{sec:cc})
+  \item \textbf{AVTR} avatar management (see Section~\ref{sec:avtr})
+\end{itemize}
 
 \subsubsection{Customizing the CRT}
 
@@ -851,7 +859,7 @@ Displays arbitrary images on the CRT in a \textbf{bitmap rendering mode}. Place 
 
 \manualfig[0.55\textwidth]{IMG.png}{The IMG program showing a list of available images. Use \key{JOYSTICK} to cycle, \key{SEL} to display.}
 
-\manualfig[0.55\textwidth]{IMG display doge.png}{An image rendered in bitmap mode --- drawn character-by-character like a dot matrix printer.}
+\manualfig[0.55\textwidth]{IMG display doge.png}{An image rendered in bitmap mode --- drawn character-by-character like a dot matrix printer. (Try squinting!)}
 
 Images are drawn in two passes: a quick initial pass, followed by a slower refresh pass that fills in any missing or corrupted characters. The display continually refreshes to maintain image quality. Press \key{BACK} to exit the image view and return to the file list.
 
@@ -903,6 +911,15 @@ Generally, if transmission is too fast for a remote user, they'll see a display 
 
 The system only operates for users who have your avatar fully shown. Non-friends or those with aggressive safety/shield settings will need to fully show your avatar to see the output; you may also need to toggle Williams Tube on and off in your radial menu. Laggy worlds may degrade performance due to bogging down the write head logic.
 
+If you wish to make the device \textbf{only locally interactive} (preventing other players from pressing buttons), select all the contact points in the Hierarchy View in Unity:
+
+\begin{quote}
+\texttt{Yip-Boi->Container->Contacts->}\\
+\texttt{\{Physical Buttons, Screen Buttons->\{1, 2, 3\}\}}
+\end{quote}
+
+\noindent In each \texttt{VRC Contact Receiver} component, uncheck \textbf{Allow Others}.
+
 % ============================================================================
 % THE CHARACTER ROM
 % ============================================================================
@@ -926,21 +943,6 @@ The Yip-Boi's display is driven by a \textbf{256-glyph Character ROM}, supplied 
 \end{tabular}
 }
 \end{center}
-
-\subsection{Upgrading the Character ROM}
-
-Future ROM revisions may include additional icon sets, alternative fonts, or expanded symbol libraries. To upgrade:
-
-\begin{enumerate}[leftmargin=2em, nosep]
-  \item Obtain the new ROM disk from your Foxipso dealer
-  \item Shut down the companion software
-  \item Remove the current ROM disk from the slot
-  \item Insert the new disk, label side up
-  \item Restart the companion software
-  \item Verify ``ROM OK'' appears during boot
-\end{enumerate}
-
-ROM disks are backward-compatible. Your Yip-Boi will always be able to read older ROM revisions. However, programs designed for newer ROM features may display placeholder glyphs if used with an older ROM.
 
 % ============================================================================
 % FREQUENTLY ASKED QUESTIONS
@@ -1024,17 +1026,16 @@ To combat this, \textbf{VRCX and AVTR are disabled by default} and require you t
   WT\_CharLo & Int & 8 & Glyph index (0--255) \\
   WT\_ScaleA & Bool & 1 & Mode bit A \\
   WT\_ScaleB & Bool & 1 & Mode bit B \\
-  PDA Enable & Bool & 1 & Enable/disable PDA \\
-  Williams Tube & Bool & 1 & Enable/disable Williams Tube \\
-  Debug Quad & Bool & 1 & Enable/disable debug quad \\
+  PDA Enable & Bool & 1 & Enable/disable PDA \& Williams Tube \\
   \midrule
-  \textbf{Total} & & \textbf{29} & \\
+  \textbf{Total} & & \textbf{27} & \\
   \bottomrule
 \end{tabular}
 }
 \end{center}
 
 \subsection{Write Modes}
+\label{sec:writemodes}
 
 \begin{center}
 {\small
@@ -1044,7 +1045,8 @@ To combat this, \textbf{VRCX and AVTR are disabled by default} and require you t
   \midrule
   false & false & TEXT & 1/40 $\times$ 1/8 & Text ROM \\
   true & false & MACRO & 1.0 $\times$ 1.0 & Macro atlas \\
-  any & true & CLEAR & 1.0 $\times$ 1.0 & (transparent fill) \\
+  false & true & CLEAR & 1.0 $\times$ 1.0 & (transparent fill) \\
+  true & true & VQ & 1/32 $\times$ 1/32 & VQ codebook atlas \\
   \bottomrule
 \end{tabular}
 }
@@ -1070,6 +1072,13 @@ To combat this, \textbf{VRCX and AVTR are disabled by default} and require you t
 }
 \end{center}
 
+\newpage
+\subsection{Write Head Timing}
+
+The following timing diagram illustrates the sequence of synced parameter states during a typical screen transition. The write head cycles through four modes: a transparent \textbf{CLEAR} to blank the screen, a full-screen \textbf{MACRO} stamp for the background, individual \textbf{TEXT} character writes for dynamic content, and \textbf{VQ} tile writes for bitmap graphics. Mode-change settle delays ($t_{settle}$) are required between each phase to allow the animation controller to process the new ScaleA/ScaleB state.
+
+\input{write_head_timing}
+
 % ============================================================================
 % COMPANION SOFTWARE
 % ============================================================================
@@ -1089,35 +1098,40 @@ Insert the Desktop Companion Software disk (3.5'' floppy) into your PC's disk dr
 \section{TROUBLESHOOTING}
 \label{sec:troubleshooting}
 
+\subsection{The display is blank in VRChat!}
+\label{sec:blankdisplay}
+
+There are several common causes for a blank display in VRChat:
+
+\begin{itemize}[leftmargin=2em, nosep]
+  \item \textbf{Unity is stealing the OSC ports.} If Unity is open with the Williams Tube OSC Sender/Receiver scripts listening on the default ports, Yip OS can't connect. Close Unity, toggle OSC on and off on your avatar in VRChat, reopen Yip OS, and try again. You should see an OSC Query notification in VRChat when Yip OS launches.
+  \item Press \key{BACK} on the PDA to redraw the Home screen.
+  \item Disable and re-enable OSC in your VRChat radial menu (Action Menu $\rightarrow$ Options $\rightarrow$ OSC).
+  \item Reset your avatar's OSC config in your radial menu.
+  \item Change out of your avatar and back into it.
+  \item Toggle the PDA off and on in your radial menu, then press \key{BACK} in Yip OS.
+  \item Verify the avatar prefab is correctly installed (see Section~\ref{sec:setup}).
+\end{itemize}
+
 \subsection{The spinner isn't spinning}
 
 The companion software is not running or has lost connection. Restart the companion app and verify OSC is enabled in VRChat.
 
 \subsection{Characters appear garbled}
 
-Write delay may be too fast. Try setting write speed to SLOW in CONF, or: \texttt{yip\_os --write-delay 0.09}
+Write delay may be too fast. Try setting write speed to \textbf{SLOW} in CONF (see Section~\ref{sec:conf}), or adjust the write delay slider in the \textbf{Display} tab of the desktop app.
+
+\subsection{The screen flashes every so often}
+
+The auto-refresh feature is enabled. This periodically redraws the entire screen to correct any display corruption, but causes a visible flash. Set \textbf{REFR} to \textbf{OFF} in the CONF program for best performance (see Section~\ref{sec:conf}).
 
 \subsection{Touch inputs don't register}
 
-\begin{itemize}[leftmargin=2em, nosep]
-  \item Check that OSC is enabled in VRChat
-  \item If OSC Query is enabled (the default), inputs should route automatically. Check the logs for ``OSCQuery: found VRChat OSC'' to confirm discovery succeeded
-  \item If OSC Query is disabled, confirm the companion app is listening on port 9001, or another port if you're using other OSC software (see Section~\ref{sec:setup})
-  \item Reach out to Foxipso for help (see Section~\ref{sec:support})
-\end{itemize}
-
-\subsection{The display is blank}
-
-\begin{itemize}[leftmargin=2em, nosep]
-  \item Verify the avatar prefab is correctly configured
-  \item Check the render texture assignment in Unity
-  \item Ensure CRT material texture tiling Y = 2
-  \item Is the Character ROM disk inserted?
-\end{itemize}
+If nothing is displaying at all, see Section~\ref{sec:blankdisplay} above. If you can see graphics on the display, check the bottom-left of the status bar for a lock icon. If visible, the device is locked --- tap \key{SEL} three times to exit lock mode (see Section~\ref{sec:lock}).
 
 \subsection{Remote users see missing characters}
 
-Your write speed is too fast for network sync. Switch to SLOW in CONF for reliable remote viewing.
+Your write speed is too fast for network sync. Switch to SLOW in CONF for reliable remote viewing. Some programs, like IMG, will do one pass quickly and then slow down to sync data for remote players.
 
 % ============================================================================
 % APPENDICES
