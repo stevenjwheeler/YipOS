@@ -264,6 +264,7 @@ int main(int argc, char* argv[]) {
         }
 
         ui.SetConfigPath(configPath);
+        if (osc_query) ui.SetOSCQueryServer(osc_query.get());
 
         // Wire up file drop → IMG screen
         ui.SetDropCallback([&pda](const std::string& path) {

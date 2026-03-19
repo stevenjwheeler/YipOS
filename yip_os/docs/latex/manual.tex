@@ -260,7 +260,7 @@ Wrist-Mounted CRT Terminal --- Model YB-1}
 \vspace{0.5em}
 {\small\ttfamily
 For use with the Yip OS Desktop Companion Application\\[0.3em]
-Revision 1.0.2}
+Revision 1.0.3}
 
 \vspace{0.4em}
 
@@ -380,6 +380,7 @@ Testing with the included OSC scripts is easiest, and the use of Av3Emulator is 
   \item Recommended: Disable VRCFury in Play Mode by going to \texttt{Tools->VRCFury->Settings->Enable VRCFury in Play Mode}. This makes testing faster and means you don't have to navigate menus in Gesture Manager or Av3Emulator.
   \item Locate \texttt{Yip-Boi->Williams Tube->Play Mode Debugger (Removes On Upload)} in the Hierarchy View. In the Inspector, change the Tag from ``EditorOnly'' to ``Untagged''. This allows the OSC scripts to run in Play mode.
   \item Enter Play mode and look at the Yip-Boi. Start Yip OS.
+  \item When finished testing, go back to \texttt{Yip-Boi->Williams Tube->Play Mode Debugger (Removes On Upload)} in the Hierarchy View and change the Tag back to ``EditorOnly''. If you forget, the two OSC testing scripts will prevent your avatar from uploading.
 \end{enumerate}
 
 You should now see the boot screen followed by the Home screen. After a timeout, you'll see the lock icon appear in the status bar on the bottom-left of the Yip OS screen. You can disable lock mode by pressing \key{SEL} three times. See Section~\ref{sec:conf} to learn about the CONF program and ALOCK.
@@ -400,7 +401,26 @@ Recommended parameters to try: Font Color, Background Color, Static Noise, Jitte
 
 \subsection{Connecting to VRChat}
 
-The Yip-Boi communicates with VRChat using the \textbf{OSC} (Open Sound Control) protocol over a standard UDP connection.
+The Yip-Boi communicates with VRChat using \textbf{OSC Query}, a service discovery protocol that lets VRChat and Yip OS find each other automatically. No manual port configuration is needed.
+
+\textbf{Setup procedure:}
+
+\begin{enumerate}[leftmargin=2em]
+  \item Enable OSC in VRChat: Action Menu $\rightarrow$ Options $\rightarrow$ OSC $\rightarrow$ Enabled
+  \item Upload your avatar with the Yip-Boi prefab installed
+  \item Launch the Desktop Companion application on your PC
+  \item VRChat will discover Yip OS via mDNS and establish a bidirectional connection
+  \item The PDA display will begin rendering within a few seconds
+  \item Confirm connection by checking for the spinning cursor (see Section~\ref{sec:spinner})
+\end{enumerate}
+
+\begin{notebox}
+OSC Query is enabled by default. To disable it, set \texttt{query\_enabled = false} under the \texttt{[osc]} section in \texttt{config.ini}. When disabled, the companion app falls back to static UDP ports (send to 9000, listen on 9001) and you must ensure OSC routing is configured correctly yourself.
+\end{notebox}
+
+\subsubsection{Manual OSC Routing (Fallback)}
+
+If OSC Query is unavailable or disabled, Yip OS uses static ports:
 
 \begin{center}
 {\small
@@ -415,21 +435,9 @@ The Yip-Boi communicates with VRChat using the \textbf{OSC} (Open Sound Control)
 }
 \end{center}
 
-\textbf{Setup procedure:}
+If you have multiple OSC programs running, you may need an OSC router such as VOR or VRCOSC. Create a new entry in your router, assign a new port (e.g., 9010), and set this port in the \textbf{``OSC'' tab} of the desktop app under \textbf{``Listen Port.''} It's generally not necessary to change Send Port.
 
-\begin{enumerate}[leftmargin=2em]
-  \item Enable OSC in VRChat: Action Menu $\rightarrow$ Options $\rightarrow$ OSC $\rightarrow$ Enabled
-  \item Upload your avatar with the Yip-Boi prefab installed
-  \item Launch the Desktop Companion application on your PC
-  \item The PDA display will begin rendering within a few seconds
-  \item Confirm connection by checking for the spinning cursor (see Section~\ref{sec:spinner})
-\end{enumerate}
-
-\subsubsection{OSC Routing}
-
-It's common to have multiple OSC programs and need VOR or VRCOSC to ensure each OSC application can receive its messages. If this applies to you, create a new entry in your OSC router of choice, assign a new port (e.g., 9010) and assign this port in the \textbf{``OSC'' tab} of the desktop app, under \textbf{``Listen Port.''} It's generally not necessary to change Send Port.
-
-\manualfig[0.55\textwidth]{osc tab.png}{The OSC configuration tab in the Yip OS desktop app.}
+\manualfig[0.55\textwidth]{osc tab.png}{The OSC configuration tab in the Yip OS desktop app. These settings are only needed when OSC Query is disabled.}
 
 \subsection{The Boot Sequence}
 
@@ -1093,7 +1101,8 @@ Write delay may be too fast. Try setting write speed to SLOW in CONF, or: \textt
 
 \begin{itemize}[leftmargin=2em, nosep]
   \item Check that OSC is enabled in VRChat
-  \item Confirm the companion app is listening on port 9001, or another port if you're using other OSC software (see Section~\ref{sec:setup})
+  \item If OSC Query is enabled (the default), inputs should route automatically. Check the logs for ``OSCQuery: found VRChat OSC'' to confirm discovery succeeded
+  \item If OSC Query is disabled, confirm the companion app is listening on port 9001, or another port if you're using other OSC software (see Section~\ref{sec:setup})
   \item Reach out to Foxipso for help (see Section~\ref{sec:support})
 \end{itemize}
 
@@ -1162,6 +1171,9 @@ Your write speed is too fast for network sync. Switch to SLOW in CONF for reliab
   \item[OSC]
     Open Sound Control. UDP protocol linking the companion software to VRChat.
 
+  \item[OSC Query]
+    Service discovery protocol using mDNS/DNS-SD and HTTP. Lets VRChat and OSC apps find each other automatically without manual port configuration.
+
   \item[Render Texture]
     The persistent 512$\times$512 framebuffer. Glyphs accumulate like phosphor traces.
 
@@ -1212,7 +1224,7 @@ To obtain warranty service, contact your authorized Foxipso dealer with proof of
 Me here at Foxipso Business Machines hopes that you'll enjoy\\
 using your new Yip-Boi arm-worn computer!\\[0.5em]
 FOXIPSO BUSINESS MACHINES, INC.\\[0.3em]
-Part No. FBM-YB-001-EN Rev.1.0.2 --- 2026}
+Part No. FBM-YB-001-EN Rev.1.0.3 --- 2026}
 \end{center}
 
 \end{document}

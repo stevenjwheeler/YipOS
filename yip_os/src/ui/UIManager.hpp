@@ -14,6 +14,7 @@ namespace YipOS {
 class PDAController;
 class Config;
 class OSCManager;
+class OSCQueryServer;
 
 class UIManager {
 public:
@@ -31,6 +32,7 @@ public:
     // Log buffer (filled by Logger callback)
     void AddLogLine(const std::string& line);
 
+    void SetOSCQueryServer(OSCQueryServer* s) { osc_query_ = s; }
     void SetConfigPath(const std::string& path) { config_path_ = path; }
     void SetAssetsPath(const std::string& path) { assets_path_ = path; }
     void SetDropCallback(std::function<void(const std::string&)> cb) { drop_callback_ = std::move(cb); }
@@ -78,6 +80,9 @@ private:
     std::array<char, 1024> text_buf_ = {};
     bool text_buf_initialized_ = false;
     bool text_vrc_chatbox_ = false;
+
+    // OSC Query server (optional, for status display)
+    OSCQueryServer* osc_query_ = nullptr;
 
     // File drop callback
     std::function<void(const std::string&)> drop_callback_;
