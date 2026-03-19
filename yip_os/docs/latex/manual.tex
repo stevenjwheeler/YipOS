@@ -747,6 +747,10 @@ The VRCX hub provides access to three sub-screens:
 
 \manualfig[0.55\textwidth]{VRCX_WORLDS.png}{VRCX recent worlds list.}
 
+\begin{notebox}
+Yip OS can only display standard ASCII characters. Friend names or world names containing special or Unicode characters will appear garbled on the display.
+\end{notebox}
+
 \textbf{Notifications} --- Displays your pending VRCX notifications (friend requests, invites, etc.).
 
 \manualfig[0.55\textwidth]{VRCX_NOTIF.png}{VRCX notifications screen.}
@@ -761,11 +765,41 @@ A locally running, Whisper-based AI model that listens to your system audio or y
 
 \manualfig[0.55\textwidth]{CC.png}{CC program displaying live transcription. Text scrolls upward as new speech is detected.}
 
-The CC display shows the most recent transcription, scrolling older text upward. The transcription model runs entirely on your local machine --- no audio is sent to external servers.
+The CC display shows the most recent transcription, scrolling older text upward. The transcription model runs entirely on your local machine using CPU inference --- no audio is sent to external servers.
+
+\subsubsection{Model Installation}
+
+CC requires a GGML-format Whisper.cpp model. Download one from:
+
+\begin{quote}
+\url{https://huggingface.co/ggerganov/whisper.cpp/tree/main}
+\end{quote}
+
+\noindent Place the \texttt{.bin} file in the \texttt{models} directory:
+
+\begin{center}
+{\small
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Platform} & \textbf{Path} \\
+  \midrule
+  Windows & \texttt{\%APPDATA\%\textbackslash yip\_os\textbackslash models\textbackslash} \\
+  Linux & \texttt{\~{}/.config/yip\_os/models/} \\
+  \bottomrule
+\end{tabular}
+}
+\end{center}
+
+The model file must be named \texttt{ggml-\textit{<model>}.bin} (e.g., \texttt{ggml-tiny.en.bin}). FBM recommends \textbf{tiny.en} or \textbf{base.en} --- these are small, fast, and English-optimized. Larger models are more accurate but significantly slower on CPU.
 
 \manualfig[0.55\textwidth]{CC_CONF.png}{CC configuration screen --- select audio source and model size.}
 
-The CC configuration screen allows you to select your \textbf{audio input source} (system audio or a specific microphone) and the \textbf{Whisper model size} (smaller models are faster, larger models are more accurate).
+The CC configuration screen allows you to select your \textbf{audio input source} (system audio or a specific microphone) and the \textbf{Whisper model size} (from the models you've downloaded).
+
+\begin{notebox}
+Log files are stored in the \texttt{logs} directory alongside \texttt{models}:
+\texttt{\%APPDATA\%\textbackslash yip\_os\textbackslash logs\textbackslash} (Windows) or \texttt{\~{}/.config/yip\_os/logs/} (Linux). Check \texttt{yip\_os.log} if CC or any other feature isn't working as expected.
+\end{notebox}
 
 \newpage
 \subsection{AVTR --- Avatar Manager}
@@ -780,6 +814,10 @@ The AVTR hub provides two functions:
 \textbf{CHANGE} --- Browse and switch between your cached avatars. The list shows all avatars that VRChat has cached OSC data for, not just your favorites. Note that VRChat only allows switching to \textbf{favorited} avatars via OSC --- if the avatar is not in your favorites, the change will be silently ignored.
 
 \manualfig[0.55\textwidth]{AVTR_CHANGE.png}{Avatar selection list. Use \key{JOYSTICK} to cycle, \key{SEL} to view details.}
+
+\begin{notebox}
+Yip OS can only display standard ASCII characters. Avatar names containing special or Unicode characters (e.g., Japanese, emoji, accented letters) will appear garbled on the display.
+\end{notebox}
 
 \manualfig[0.55\textwidth]{AVTR_DETAIL.png}{Avatar detail view --- press \key{SEL} to switch to this avatar.}
 
@@ -829,6 +867,8 @@ A live group chat viewer for \textbf{@YipBoiChat} on Telegram. People who purcha
 
 \manualfig[0.55\textwidth]{CHAT.png}{The CHAT program displaying recent messages with sender names and timestamps.}
 
+\manualfig[0.55\textwidth]{CHAT CONSENT.png}{CHAT consent screen --- tap I CONSENT to accept and begin viewing messages.}
+
 On first launch, CHAT displays a consent screen. Once accepted, the program fetches messages from a Cloudflare Worker endpoint using a simple HTTP request --- no Telegram account, API key, or credentials are required to read the public chat room.
 
 Messages are displayed in a scrollable list. Use \key{JOYSTICK} to move through the list and \key{SEL} to view the full message, sender name, and timestamp.
@@ -865,7 +905,7 @@ Images are drawn in two passes: a quick initial pass, followed by a slower refre
 
 \manualfig[0.55\textwidth]{IMG no images.png}{The IMG program when no images are found in the images directory.}
 
-If no images are found, a message is displayed indicating the expected path. Simply add image files to the \texttt{assets/images} directory and relaunch the program.
+If no images are found, a message is displayed indicating the expected path. Simply add image files to the \texttt{assets/images} directory and launch IMG again.
 
 \newpage
 \subsection{MEDIA --- Media Player}
