@@ -129,6 +129,10 @@ Section "Install"
     SetOutPath "$INSTDIR\assets\images"
     File /nonfatal "..\assets\images\*.*"
 
+    ; Create AppData directories for models, logs, etc.
+    CreateDirectory "$APPDATA\yip_os"
+    CreateDirectory "$APPDATA\yip_os\models"
+
     ; Create shortcuts
     CreateDirectory "$SMPROGRAMS\YipOS"
     CreateShortcut "$SMPROGRAMS\YipOS\YipOS.lnk" "$INSTDIR\yip_os.exe"
