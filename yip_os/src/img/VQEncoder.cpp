@@ -117,13 +117,23 @@ bool VQEncoder::EncodeImage(const std::string& image_path, IndexGrid& out) {
 
     constexpr int target = IMG_COLS * BLOCK_SIZE; // 256
 
-    // Resize to 256x256 using nearest-neighbor sampling into float buffer
-    std::vector<float> buf(target * target);
-    for (int y = 0; y < target; y++) {
-        int sy = y * h / target;
-        for (int x = 0; x < target; x++) {
-            int sx = x * w / target;
-            buf[y * target + x] = static_cast<float>(data[sy * w + sx]);
+    // Resize to 256x256 with aspect ratio preservation (letterbox/pillarbox).
+    // The image is scaled to fit within 256x256, centered, with black padding.
+    std::vector<float> buf(target * target, 0.0f); // black background
+
+    float scale = std::min(static_cast<float>(target) / w,
+                           static_cast<float>(target) / h);
+    int scaled_w = static_cast<int>(w * scale);
+    int scaled_h = static_cast<int>(h * scale);
+    int offset_x = (target - scaled_w) / 2;
+    int offset_y = (target - scaled_h) / 2;
+
+    for (int y = 0; y < scaled_h; y++) {
+        int sy = y * h / scaled_h;
+        for (int x = 0; x < scaled_w; x++) {
+            int sx = x * w / scaled_w;
+            buf[(y + offset_y) * target + (x + offset_x)] =
+                static_cast<float>(data[sy * w + sx]);
         }
     }
     stbi_image_free(data);

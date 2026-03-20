@@ -24,6 +24,15 @@
 #include <cmath>
 #include <chrono>
 #include <algorithm>
+#include <filesystem>
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#undef APIENTRY // avoid redefinition warning with glad.h
+#include <shellapi.h>
+#endif
 
 namespace YipOS {
 
@@ -195,6 +204,10 @@ void UIManager::Render(PDAController& pda, Config& config, OSCManager& osc) {
         }
         if (ImGui::BeginTabItem("Text")) {
             RenderTextTab(pda, config, osc);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("IMG")) {
+            RenderIMGTab(pda, config);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Stocks")) {
@@ -1017,6 +1030,73 @@ void UIManager::RenderStocksTab(PDAController& pda, Config& config) {
             ImGui::Text("  %s: $%.4f (%+.1f%%)", q.symbol.c_str(), q.current_price, pct);
         }
     }
+}
+
+// --- IMG Tab ---
+void UIManager::RenderIMGTab(PDAController& pda, Config& config) {
+    ImGui::Text("Image Display (IMG)");
+    ImGui::TextDisabled("Display images on the PDA via vector quantization (VQ encoding).");
+    ImGui::TextDisabled("Drag and drop an image onto this window to send it to the PDA.");
+
+    ImGui::Separator();
+
+    // Images directory
+    std::string assets = pda.GetAssetsPath();
+    if (assets.empty()) assets = "assets";
+    namespace fs = std::filesystem;
+    fs::path img_dir = fs::path(assets) / "images";
+
+    ImGui::Text("Images Directory");
+    ImGui::TextDisabled("%s", img_dir.string().c_str());
+
+    if (ImGui::Button("Open Folder")) {
+#ifdef _WIN32
+        // ShellExecuteA to open the images folder in Explorer
+        std::string dir_str = img_dir.string();
+        // Create directory if it doesn't exist
+        fs::create_directories(img_dir);
+        ShellExecuteA(nullptr, "explore", dir_str.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+#endif
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("Place .jpg/.png/.bmp files here");
+
+    ImGui::Separator();
+
+    // List images in the directory
+    ImGui::Text("Available Images");
+    if (fs::exists(img_dir) && fs::is_directory(img_dir)) {
+        int count = 0;
+        for (const auto& entry : fs::directory_iterator(img_dir)) {
+            if (!entry.is_regular_file()) continue;
+            std::string ext = entry.path().extension().string();
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+            if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp") {
+                std::string fname = entry.path().filename().string();
+                ImGui::BulletText("%s", fname.c_str());
+                ImGui::SameLine(300);
+                std::string btn_id = "Send##img_" + std::to_string(count);
+                if (ImGui::SmallButton(btn_id.c_str())) {
+                    pda.SetDroppedImagePath(entry.path().string());
+                }
+                count++;
+            }
+        }
+        if (count == 0) {
+            ImGui::TextDisabled("No images found. Add .jpg/.png/.bmp files to the folder above.");
+        }
+    } else {
+        ImGui::TextDisabled("Directory does not exist. Click 'Open Folder' to create it.");
+    }
+
+    ImGui::Separator();
+
+    ImGui::Text("Drag & Drop");
+    ImGui::TextDisabled("Drag any image file onto this window to display it on the PDA.");
+    ImGui::TextDisabled("Supported formats: .jpg, .jpeg, .png, .bmp");
+    ImGui::Spacing();
+    ImGui::TextDisabled("Images are converted to 1-bit dithered 32x32 blocks via VQ encoding,");
+    ImGui::TextDisabled("preserving aspect ratio with letterboxing.");
 }
 
 // --- NVRAM Tab ---

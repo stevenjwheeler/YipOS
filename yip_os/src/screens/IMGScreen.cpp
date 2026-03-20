@@ -192,6 +192,7 @@ void IMGScreen::EnterDisplayMode(const std::string& image_path) {
     skip_clock = true;
     handle_back = true;
     refresh_interval = -1.0f; // disable auto-refresh; we manage passes ourselves
+    update_interval = 0.1f;   // fast polling for drops and pass management
 
     saved_write_delay_ = display_.GetWriteDelay();
 
@@ -200,8 +201,9 @@ void IMGScreen::EnterDisplayMode(const std::string& image_path) {
     display_.ClearScreen();
     display_.SetBitmapMode();
 
-    // Start progressive passes: fast → medium → slow
+    // Start progressive passes: fast → medium → slow → done
     pass_ = 0;
+    pass_done_ = false;
     StartPass();
 
     Logger::Info("IMG: displaying " + image_path);
@@ -226,7 +228,9 @@ void IMGScreen::ExitDisplayMode() {
     skip_clock = false;
     handle_back = false;
     refresh_interval = 0;
+    update_interval = 1.0f; // back to slow polling in list mode
     pass_active_ = false;
+    pass_done_ = false;
 
     // Restore write delay
     display_.SetWriteDelay(saved_write_delay_);
@@ -246,23 +250,48 @@ void IMGScreen::WriteBitmap() {
 }
 
 void IMGScreen::Update() {
-    // Check for dropped image
+    // Check for dropped image — clear any prior display and show the new one
     std::string drop = pda_.ConsumeDroppedImagePath();
     if (!drop.empty()) {
+        Logger::Info("IMG: Update() consumed drop, cancelling current render (" +
+                     std::to_string(display_.BufferedRemaining()) + " writes pending)");
         DropImage(drop);
+        return; // don't process passes this tick, we just started fresh
     }
 
     // Progressive pass management: when buffer drains, start next pass
     if (mode_ == DISPLAY && pass_active_ && !display_.IsBuffered()) {
         pass_active_ = false;
         pass_++;
-        // After initial passes, keep refreshing continuously at slow speed
-        StartPass();
+        if (pass_ < PASS_COUNT) {
+            // More passes to go
+            StartPass();
+        } else if (!pass_done_) {
+            // Final slow pass for good measure, then stop
+            StartPass();
+            pass_done_ = true;
+        }
+        // After pass_done_, do nothing — image stays on screen, no more redraws
     }
 }
 
 void IMGScreen::DropImage(const std::string& path) {
     Logger::Info("IMG: dropped image " + path);
+
+    // Copy the image into the images directory if it's not already there
+    fs::path src(path);
+    fs::path dst = fs::path(images_dir_) / src.filename();
+    if (src != dst && fs::exists(src)) {
+        try {
+            fs::create_directories(images_dir_);
+            fs::copy_file(src, dst, fs::copy_options::overwrite_existing);
+            Logger::Info("IMG: copied " + src.filename().string() + " to images directory");
+            ScanImages(); // refresh the file list
+        } catch (const fs::filesystem_error& e) {
+            Logger::Warning("IMG: failed to copy image: " + std::string(e.what()));
+        }
+    }
+
     EnterDisplayMode(path);
 }
 

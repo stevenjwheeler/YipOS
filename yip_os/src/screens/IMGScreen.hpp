@@ -52,6 +52,7 @@ private:
     // Progressive pass system: fast → medium → slow → continuous refresh
     int pass_ = 0;
     bool pass_active_ = false; // true while a pass is being flushed
+    bool pass_done_ = false;   // true after all passes complete (no more redraws)
     static constexpr int PASS_COUNT = 3;
     static constexpr float PASS_DELAYS[PASS_COUNT] = {0.01f, 0.04f, 0.07f};
     static constexpr float REFRESH_DELAY = 0.07f; // continuous refresh speed

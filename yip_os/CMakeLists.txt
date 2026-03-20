@@ -33,7 +33,7 @@ set(GGML_VULKAN ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
     whisper
     GIT_REPOSITORY https://github.com/ggml-org/whisper.cpp.git
-    GIT_TAG v1.7.5
+    GIT_TAG v1.8.3
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(whisper)

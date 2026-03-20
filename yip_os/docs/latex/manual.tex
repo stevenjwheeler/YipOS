@@ -923,17 +923,27 @@ The desktop app's Text tab also supports \textbf{VRChat ChatBox input}: enable `
 \subsection{IMG --- Bitmap Image Display}
 \label{sec:img}
 
-Displays arbitrary images on the CRT in a \textbf{bitmap rendering mode}. Place image files in the \texttt{assets/images} folder in the Yip OS installation directory, then select them from the list.
+Displays arbitrary images on the CRT in a \textbf{bitmap rendering mode}. Images are converted to 1-bit dithered 32\texttimes32 blocks via vector quantization, with \textbf{aspect ratio preserved} (letterboxed or pillarboxed as needed).
 
 \manualfig[0.55\textwidth]{IMG.png}{The IMG program showing a list of available images. Use \key{JOYSTICK} to cycle, \key{SEL} to display.}
 
 \manualfig[0.55\textwidth]{IMG display doge.png}{An image rendered in bitmap mode --- drawn character-by-character like a dot matrix printer. (Try squinting!)}
 
-Images are drawn in two passes: a quick initial pass, followed by a slower refresh pass that fills in any missing or corrupted characters. The display continually refreshes to maintain image quality. Press \key{BACK} to exit the image view and return to the file list.
+Images are drawn in three progressive passes: a fast initial pass, a medium pass, then a final slow pass for reliable network sync. After all passes complete, the image remains on screen without further redraws. Press \key{BACK} to exit the image view and return to the file list.
+
+\subsubsection{Adding Images}
+
+There are three ways to add images:
+
+\begin{itemize}
+  \item Place \texttt{.jpg}, \texttt{.png}, or \texttt{.bmp} files directly in the \texttt{assets/images} directory.
+  \item Use the \textbf{IMG tab} in the desktop app --- click \textbf{Open Folder} to open the images directory, or click \textbf{Send} next to any image to display it immediately.
+  \item \textbf{Drag and drop} an image file onto the desktop app window. The image is automatically copied into the images directory and displayed on the PDA.
+\end{itemize}
 
 \manualfig[0.55\textwidth]{IMG no images.png}{The IMG program when no images are found in the images directory.}
 
-If no images are found, a message is displayed indicating the expected path. Simply add image files to the \texttt{assets/images} directory and launch IMG again.
+If no images are found, a message is displayed indicating the expected path.
 
 \newpage
 \subsection{MEDIA --- Media Player}

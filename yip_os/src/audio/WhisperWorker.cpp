@@ -4,10 +4,30 @@
 #include "core/PathUtils.hpp"
 
 #include <whisper.h>
+#include <ggml-vulkan.h>
 #include <filesystem>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
 #include <chrono>
 #include <algorithm>
 #include <cmath>
+
+#ifdef _WIN32
+// Isolated function for SEH — __try cannot coexist with C++ object unwinding.
+// Returns whisper_context* on success, nullptr on crash.
+static whisper_context* TryInitWhisperSEH(const char* path, whisper_context_params cparams) {
+    whisper_context* ctx = nullptr;
+    __try {
+        ctx = whisper_init_from_file_with_params(path, cparams);
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        ctx = nullptr;
+    }
+    return ctx;
+}
+#endif
 
 namespace YipOS {
 
@@ -57,13 +77,61 @@ bool WhisperWorker::LoadModel(const std::string& model_path) {
         return false;
     }
 
-    Logger::Info("CC: Loading model: " + model_path);
+    // Log file size for diagnostics (corrupted/truncated models crash whisper)
+    {
+        auto fsize = std::filesystem::file_size(model_path);
+        Logger::Info("CC: Loading model: " + model_path +
+                     " (" + std::to_string(fsize / (1024 * 1024)) + " MB)");
+    }
 
     struct whisper_context_params cparams = whisper_context_default_params();
-    ctx_ = whisper_init_from_file_with_params(model_path.c_str(), cparams);
+
+    // Check Vulkan GPU availability before attempting GPU init.
+    // If no Vulkan devices are found, skip straight to CPU to avoid crashes
+    // on systems without proper Vulkan drivers.
+    bool try_gpu = true;
+    {
+        int vk_devices = ggml_backend_vk_get_device_count();
+        if (vk_devices <= 0) {
+            Logger::Warning("CC: No Vulkan devices found, using CPU only");
+            try_gpu = false;
+        } else {
+            char desc[256] = {};
+            ggml_backend_vk_get_device_description(0, desc, sizeof(desc));
+            Logger::Info("CC: Vulkan device: " + std::string(desc));
+        }
+    }
+
+    if (try_gpu) {
+        Logger::Info("CC: Initializing with GPU acceleration...");
+        cparams.use_gpu = true;
+#ifdef _WIN32
+        // Vulkan shader compilation can crash (segfault) on some driver versions.
+        // Use SEH to catch the crash and fall back to CPU gracefully.
+        ctx_ = TryInitWhisperSEH(model_path.c_str(), cparams);
+        if (!ctx_) {
+            Logger::Warning("CC: GPU init failed (possible Vulkan crash), falling back to CPU");
+        }
+#else
+        ctx_ = whisper_init_from_file_with_params(model_path.c_str(), cparams);
+        if (!ctx_) {
+            Logger::Warning("CC: GPU init failed, retrying with CPU only...");
+        }
+#endif
+    }
 
     if (!ctx_) {
-        Logger::Warning("CC: Failed to load model");
+        cparams.use_gpu = false;
+        Logger::Info("CC: Initializing with CPU...");
+#ifdef _WIN32
+        ctx_ = TryInitWhisperSEH(model_path.c_str(), cparams);
+#else
+        ctx_ = whisper_init_from_file_with_params(model_path.c_str(), cparams);
+#endif
+    }
+
+    if (!ctx_) {
+        Logger::Warning("CC: Failed to load model (init failed)");
         return false;
     }
 
