@@ -28,19 +28,36 @@ public:
     void Stop();
     bool IsRunning() const { return running_; }
 
-    // Output — thread-safe
-    bool HasText() const;
-    std::string PopText();
+    // Output — thread-safe, dual-channel (tentative + committed)
+    // Committed text (consumed once, FIFO)
+    bool HasCommitted() const;
+    std::string PopCommitted();
+
+    // Tentative text (single slot, overwritten each progressive step)
+    std::string GetTentative() const;
+    uint32_t GetTentativeVersion() const;
+
+    // Backward compat aliases
+    bool HasText() const { return HasCommitted(); }
+    std::string PopText() { return PopCommitted(); }
     std::string PeekLatest() const;
 
     // Configuration
     void SetLanguage(const std::string& lang) { language_ = lang; }
     std::string GetLanguage() const { return language_; }
-    void SetChunkSeconds(int seconds) { chunk_seconds_ = std::max(1, std::min(seconds, 10)); }
-    int GetChunkSeconds() const { return chunk_seconds_; }
+
+    // Sliding window parameters (milliseconds)
+    void SetStepMs(int ms) { step_ms_ = std::max(2000, std::min(ms, 5000)); }
+    int GetStepMs() const { return step_ms_; }
+    void SetLengthMs(int ms) { length_ms_ = std::max(5000, std::min(ms, 15000)); }
+    int GetLengthMs() const { return length_ms_; }
 
     // Returns true if current model is multilingual (no ".en" suffix)
     bool IsMultilingual() const;
+
+    // Returns true if current model supports the translate flag
+    // (false for turbo, distil, and english-only models)
+    bool SupportsTranslation() const;
 
     static std::string DefaultModelPath(const std::string& model_name = "tiny.en");
     static std::vector<std::string> ScanAvailableModels();
@@ -56,17 +73,23 @@ private:
     std::thread worker_thread_;
     std::atomic<bool> running_{false};
 
-    // Output queue
+    // Committed output queue
     mutable std::mutex text_mutex_;
-    std::queue<std::string> text_queue_;
+    std::queue<std::string> committed_queue_;
     std::string latest_text_;
 
-    // Processing buffer (reusable)
-    std::vector<float> process_buf_;
+    // Tentative output (single slot, overwritten each progressive step)
+    mutable std::mutex tentative_mutex_;
+    std::string tentative_text_;
+    std::atomic<uint32_t> tentative_version_{0};
 
-    int chunk_seconds_ = 3; // adjustable: 2-10 seconds
+    // Sliding window parameters
+    int step_ms_ = 3000;    // run inference every 3s of new audio
+    int length_ms_ = 10000; // feed whisper 10s of audio context
+    static constexpr int KEEP_MS = 200; // audio overlap across commit boundaries
 
     static constexpr int WHISPER_SAMPLE_RATE = 16000;
+    static constexpr float SILENCE_RMS_THRESHOLD = 0.003f;
 };
 
 } // namespace YipOS

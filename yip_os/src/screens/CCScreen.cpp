@@ -16,6 +16,11 @@ CCScreen::CCScreen(PDAController& pda) : Screen(pda) {
     update_interval = 0.25f; // faster tick for responsive captions
     skip_clock = true; // we own the full display, no clock writes
 
+    // Initialize tentative display buffers to spaces (matches initial inverted fill)
+    for (auto& s : tent_displayed_) {
+        s = std::string(LINE_WIDTH, ' ');
+    }
+
     // Auto-start CC on screen entry
     StartCC();
 }
@@ -51,10 +56,14 @@ void CCScreen::StartCC() {
         return;
     }
 
-    // Restore saved chunk window
+    // Restore saved step/window
+    std::string saved_step = pda_.GetConfig().GetState("cc.step");
+    if (!saved_step.empty()) {
+        whisper->SetStepMs(std::stoi(saved_step));
+    }
     std::string saved_window = pda_.GetConfig().GetState("cc.window");
     if (!saved_window.empty()) {
-        whisper->SetChunkSeconds(std::stoi(saved_window));
+        whisper->SetLengthMs(std::stoi(saved_window));
     }
 
     // Restore saved audio device
@@ -107,6 +116,29 @@ bool CCScreen::FilterText(const std::string& text) const {
     return false;
 }
 
+void CCScreen::WordWrap(const std::string& text, std::vector<std::string>& output) {
+    size_t pos = 0;
+    while (pos < text.size()) {
+        size_t remaining = text.size() - pos;
+        if (static_cast<int>(remaining) <= LINE_WIDTH) {
+            output.push_back(text.substr(pos));
+            break;
+        }
+        size_t end = pos + LINE_WIDTH;
+        size_t break_at = text.rfind(' ', end);
+        if (break_at == std::string::npos || break_at <= pos) {
+            break_at = end;
+        }
+        output.push_back(text.substr(pos, break_at - pos));
+        pos = break_at;
+        if (pos < text.size() && text[pos] == ' ') pos++;
+    }
+}
+
+bool CCScreen::IsTentativeEnabled() const {
+    return display_.GetWriteDelay() <= ULTRA_WRITE_DELAY;
+}
+
 void CCScreen::Render() {
     RenderFrame("CC");
 
@@ -119,6 +151,16 @@ void CCScreen::Render() {
         display_.WriteText(2, 3, "Starting...");
     } else {
         display_.WriteText(2, 3, "Listening...");
+    }
+
+    // Fill tentative rows with inverted spaces (ULTRA mode)
+    // This gives them an inverted background from the start
+    if (IsTentativeEnabled()) {
+        for (int r = TENT_FIRST_ROW; r <= TENT_LAST_ROW; r++) {
+            for (int c = LEFT_COL; c <= RIGHT_COL; c++) {
+                display_.WriteChar(c, r, 32 + INVERT_OFFSET);
+            }
+        }
     }
 
     // CONF button on row 6 (touch 53 area)
@@ -139,64 +181,130 @@ void CCScreen::Update() {
     auto* whisper = pda_.GetWhisperWorker();
     if (!whisper) return;
 
-    // Pull new text from whisper, word-wrap into lines
-    while (whisper->HasText()) {
-        std::string text = whisper->PopText();
-        if (FilterText(text)) continue;
+    bool tentative_enabled = IsTentativeEnabled();
 
-        // Word-wrap into LINE_WIDTH lines
-        size_t pos = 0;
-        while (pos < text.size()) {
-            size_t remaining = text.size() - pos;
-            if (static_cast<int>(remaining) <= LINE_WIDTH) {
-                pending_lines_.push_back(text.substr(pos));
-                break;
-            }
-            size_t end = pos + LINE_WIDTH;
-            size_t break_at = text.rfind(' ', end);
-            if (break_at == std::string::npos || break_at <= pos) {
-                break_at = end;
-            }
-            pending_lines_.push_back(text.substr(pos, break_at - pos));
-            pos = break_at;
-            if (pos < text.size() && text[pos] == ' ') pos++;
+    // Set committed zone bounds based on tentative mode
+    committed_first_row_ = 1;
+    committed_last_row_ = tentative_enabled ? 4 : 6;
+
+    // Pull committed text from whisper, word-wrap into lines
+    int commits_pulled = 0;
+    while (whisper->HasCommitted()) {
+        std::string text = whisper->PopCommitted();
+        commits_pulled++;
+        if (FilterText(text)) {
+            Logger::Debug("CC.scr: filtered commit #" + std::to_string(commits_pulled) +
+                         " \"" + text.substr(0, 40) + "\"");
+            continue;
         }
+        size_t before = pending_lines_.size();
+        WordWrap(text, pending_lines_);
+        Logger::Info("CC.scr: commit #" + std::to_string(commits_pulled) +
+                    " -> " + std::to_string(pending_lines_.size() - before) + " lines" +
+                    " pending=" + std::to_string(pending_lines_.size()) +
+                    " \"" + text.substr(0, 50) + "\"");
 
         // Drop oldest lines if too many pending (keep newest)
         while (pending_lines_.size() > MAX_PENDING_LINES) {
             pending_lines_.erase(pending_lines_.begin());
-            line_char_pos_ = 0;
         }
     }
 
-    // Nothing to write
-    if (pending_lines_.empty()) return;
+    // Write committed lines
+    if (!pending_lines_.empty()) {
+        display_.BeginBuffered();
 
-    // Write up to LINES_PER_TICK lines to keep up with fast dialog.
-    // With a 0.25s tick this allows ~12 lines/sec throughput.
-    display_.BeginBuffered();
+        int lines_written = 0;
+        while (!pending_lines_.empty() && lines_written < LINES_PER_TICK) {
+            const std::string& line = pending_lines_.front();
 
-    int lines_written = 0;
-    while (!pending_lines_.empty() && lines_written < LINES_PER_TICK) {
-        const std::string& line = pending_lines_.front();
+            Logger::Debug("CC.scr: write row=" + std::to_string(committed_cursor_) +
+                         " zone=[" + std::to_string(committed_first_row_) + "-" +
+                         std::to_string(committed_last_row_) + "]" +
+                         " \"" + line.substr(0, 38) + "\"");
 
-        // Write text chars, then pad remainder with spaces to clear old content.
-        int col = LEFT_COL;
-        for (int i = 0; i < static_cast<int>(line.size()); i++) {
-            char ch = line[i];
-            int char_idx = (ch >= 32 && ch <= 126) ? static_cast<int>(ch) : 32;
-            display_.WriteChar(col++, cursor_row_, char_idx);
+            // Write text chars, then pad remainder with spaces to clear old content
+            int col = LEFT_COL;
+            for (int i = 0; i < static_cast<int>(line.size()); i++) {
+                char ch = line[i];
+                int char_idx = (ch >= 32 && ch <= 126) ? static_cast<int>(ch) : 32;
+                display_.WriteChar(col++, committed_cursor_, char_idx);
+            }
+            while (col <= RIGHT_COL) {
+                display_.WriteChar(col++, committed_cursor_, 32);
+            }
+
+            pending_lines_.erase(pending_lines_.begin());
+            committed_cursor_++;
+            if (committed_cursor_ > committed_last_row_) {
+                committed_cursor_ = committed_first_row_;
+            }
+            lines_written++;
         }
-        while (col <= RIGHT_COL) {
-            display_.WriteChar(col++, cursor_row_, 32);
-        }
 
-        pending_lines_.erase(pending_lines_.begin());
-        cursor_row_++;
-        if (cursor_row_ > LAST_ROW) {
-            cursor_row_ = FIRST_ROW;
+        if (!pending_lines_.empty()) {
+            Logger::Debug("CC.scr: " + std::to_string(pending_lines_.size()) +
+                         " lines still pending after tick");
         }
-        lines_written++;
+    }
+
+    // Tentative zone: rows 5-6, diff-based writes (ULTRA only)
+    if (tentative_enabled) {
+        uint32_t ver = whisper->GetTentativeVersion();
+        if (ver != last_tentative_version_) {
+            last_tentative_version_ = ver;
+
+            std::string tent_text = whisper->GetTentative();
+
+            Logger::Debug("CC.scr: tentative v" + std::to_string(ver) +
+                         " \"" + tent_text.substr(0, 50) + "\"");
+
+            // Word-wrap tentative text into at most 2 rows
+            std::vector<std::string> tent_lines;
+            if (!tent_text.empty() && !FilterText(tent_text)) {
+                WordWrap(tent_text, tent_lines);
+            }
+
+            // Pad to exactly 2 lines (pad with empty if needed)
+            while (tent_lines.size() < 2) {
+                tent_lines.push_back("");
+            }
+            // Truncate to 2 lines if more
+            if (tent_lines.size() > 2) {
+                // Keep last 2 lines (most recent content)
+                tent_lines.erase(tent_lines.begin(),
+                                 tent_lines.end() - 2);
+            }
+
+            display_.BeginBuffered();
+
+            // Diff-based write for each tentative row (inverted text)
+            int chars_written = 0;
+            for (int r = 0; r < 2; r++) {
+                int screen_row = TENT_FIRST_ROW + r;
+                const std::string& new_line = tent_lines[r];
+                const std::string& old_line = tent_displayed_[r];
+
+                // Pad both to LINE_WIDTH for comparison
+                std::string new_padded = new_line;
+                while (static_cast<int>(new_padded.size()) < LINE_WIDTH) new_padded += ' ';
+                std::string old_padded = old_line;
+                while (static_cast<int>(old_padded.size()) < LINE_WIDTH) old_padded += ' ';
+
+                // Only write chars that differ — all inverted for visual distinction
+                for (int c = 0; c < LINE_WIDTH; c++) {
+                    if (new_padded[c] != old_padded[c]) {
+                        char ch = new_padded[c];
+                        int char_idx = (ch >= 32 && ch <= 126) ? static_cast<int>(ch) : 32;
+                        display_.WriteChar(LEFT_COL + c, screen_row, char_idx + INVERT_OFFSET);
+                        chars_written++;
+                    }
+                }
+
+                tent_displayed_[r] = new_padded;
+            }
+            Logger::Debug("CC.scr: tentative diff wrote " + std::to_string(chars_written) + " chars");
+        }
     }
 }
 

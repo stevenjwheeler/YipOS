@@ -738,14 +738,37 @@ void UIManager::RenderCCTab(PDAController& pda, Config& config) {
 
     ImGui::Separator();
 
-    // Window size
-    ImGui::Text("Processing Window");
-    int chunk_sec = whisper->GetChunkSeconds();
-    if (ImGui::SliderInt("Window (sec)", &chunk_sec, 1, 10)) {
-        whisper->SetChunkSeconds(chunk_sec);
-        config.SetState("cc.window", std::to_string(chunk_sec));
+    // Processing config
+    ImGui::Text("Processing");
+
+    int step_ms = whisper->GetStepMs();
+    if (ImGui::SliderInt("Step (ms)", &step_ms, 2000, 5000)) {
+        whisper->SetStepMs(step_ms);
+        config.SetState("cc.step", std::to_string(step_ms));
     }
-    ImGui::TextDisabled("Longer window = more accurate but slower to appear.");
+    ImGui::TextDisabled("Inference interval. Lower = faster updates, higher = more efficient.");
+
+    int length_ms = whisper->GetLengthMs();
+    if (ImGui::SliderInt("Window (ms)", &length_ms, 5000, 15000)) {
+        whisper->SetLengthMs(length_ms);
+        config.SetState("cc.window", std::to_string(length_ms));
+    }
+    ImGui::TextDisabled("Audio context window. Longer = better accuracy, more compute.");
+
+    ImGui::Spacing();
+
+    // Translation support
+    if (whisper->IsModelLoaded()) {
+        if (whisper->SupportsTranslation()) {
+            ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "Translation: enabled");
+        } else {
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f),
+                "Translation: disabled (turbo/distil/en-only models)");
+        }
+    }
+
+    ImGui::TextDisabled("Progressive text preview requires ULTRA write speed.");
+    ImGui::TextDisabled("At NORM/SLOW, only finalized text is displayed.");
 
     ImGui::Separator();
 

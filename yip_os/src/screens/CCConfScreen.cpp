@@ -60,7 +60,7 @@ void CCConfScreen::RenderContent() {
         dev = dev.substr(0, max_w);
     d.WriteText(1, 2, dev);
 
-    // Row 3: Status
+    // Row 3: Status + translation support
     std::string status = "Status: ";
     if (whisper && whisper->IsRunning())
         status += "LISTENING";
@@ -70,18 +70,28 @@ void CCConfScreen::RenderContent() {
         status += "NO MODEL";
     d.WriteText(1, 3, status);
 
-    // Row 4: Audio status
-    std::string astatus = "Audio: ";
-    if (audio && audio->IsRunning())
-        astatus += "CAPTURING";
-    else
-        astatus += "STOPPED";
-    d.WriteText(1, 4, astatus);
+    // Row 4: Translation support indicator
+    if (whisper && whisper->IsModelLoaded()) {
+        if (whisper->SupportsTranslation()) {
+            d.WriteText(1, 4, "Translate: YES");
+        } else {
+            d.WriteText(1, 4, "Translate: NO (turbo)");
+        }
+    } else {
+        std::string astatus = "Audio: ";
+        if (audio && audio->IsRunning())
+            astatus += "CAPTURING";
+        else
+            astatus += "STOPPED";
+        d.WriteText(1, 4, astatus);
+    }
 
-    // Row 5: Window size
+    // Row 5: Step/Window size
     if (whisper) {
-        char wbuf[32];
-        std::snprintf(wbuf, sizeof(wbuf), "Window: %ds", whisper->GetChunkSeconds());
+        char wbuf[40];
+        std::snprintf(wbuf, sizeof(wbuf), "Step:%ds Win:%ds",
+                      whisper->GetStepMs() / 1000,
+                      whisper->GetLengthMs() / 1000);
         d.WriteText(1, 5, wbuf);
     }
 
