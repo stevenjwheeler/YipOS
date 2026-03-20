@@ -30,6 +30,15 @@ set(WHISPER_BUILD_SERVER OFF CACHE BOOL "" FORCE)
 set(GGML_CUDA OFF CACHE BOOL "" FORCE)
 set(GGML_METAL OFF CACHE BOOL "" FORCE)
 set(GGML_VULKAN ON CACHE BOOL "" FORCE)
+# Disable GGML_NATIVE so the CPU backend targets a portable instruction set
+# instead of whatever the build machine supports (e.g. AVX-512 on a dev box
+# will crash on consumer CPUs that lack it).  AVX2/FMA/F16C covers all modern
+# x86-64 gaming PCs (Sandy Bridge era and newer for AVX, Haswell+ for AVX2).
+set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
+set(GGML_AVX    ON  CACHE BOOL "" FORCE)
+set(GGML_AVX2   ON  CACHE BOOL "" FORCE)
+set(GGML_FMA    ON  CACHE BOOL "" FORCE)
+set(GGML_F16C   ON  CACHE BOOL "" FORCE)
 FetchContent_Declare(
     whisper
     GIT_REPOSITORY https://github.com/ggml-org/whisper.cpp.git

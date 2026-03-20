@@ -18,11 +18,13 @@
 #ifdef _WIN32
 // Isolated function for SEH — __try cannot coexist with C++ object unwinding.
 // Returns whisper_context* on success, nullptr on crash.
+static DWORD g_seh_exception_code = 0;
 static whisper_context* TryInitWhisperSEH(const char* path, whisper_context_params cparams) {
     whisper_context* ctx = nullptr;
+    g_seh_exception_code = 0;
     __try {
         ctx = whisper_init_from_file_with_params(path, cparams);
-    } __except(EXCEPTION_EXECUTE_HANDLER) {
+    } __except(g_seh_exception_code = GetExceptionCode(), EXCEPTION_EXECUTE_HANDLER) {
         ctx = nullptr;
     }
     return ctx;
@@ -110,7 +112,9 @@ bool WhisperWorker::LoadModel(const std::string& model_path) {
         // Use SEH to catch the crash and fall back to CPU gracefully.
         ctx_ = TryInitWhisperSEH(model_path.c_str(), cparams);
         if (!ctx_) {
-            Logger::Warning("CC: GPU init failed (possible Vulkan crash), falling back to CPU");
+            char hex[32];
+            snprintf(hex, sizeof(hex), "0x%08lX", g_seh_exception_code);
+            Logger::Warning("CC: GPU init failed (SEH exception " + std::string(hex) + "), falling back to CPU");
         }
 #else
         ctx_ = whisper_init_from_file_with_params(model_path.c_str(), cparams);
@@ -131,7 +135,13 @@ bool WhisperWorker::LoadModel(const std::string& model_path) {
     }
 
     if (!ctx_) {
+#ifdef _WIN32
+        char hex[32];
+        snprintf(hex, sizeof(hex), "0x%08lX", g_seh_exception_code);
+        Logger::Warning("CC: Failed to load model (SEH exception " + std::string(hex) + ")");
+#else
         Logger::Warning("CC: Failed to load model (init failed)");
+#endif
         return false;
     }
 
