@@ -777,7 +777,7 @@ When VRCX has unseen notifications, an \texttt{*} appears next to the VRCX tile 
 \subsection{CC --- Closed Captions}
 \label{sec:cc}
 
-A locally running, Whisper-based AI model that listens to your system audio or your selected microphone and displays live transcription on the CRT. This is one of the most visually intensive programs --- the status bar clock may be temporarily hidden to maximize refresh rate.
+A locally running closed captions program powered by Georgi Gerganov's \textbf{whisper.cpp} (\url{https://github.com/ggml-org/whisper.cpp/}). It listens to your system audio or your selected microphone and displays live transcription on the CRT. This is one of the most visually intensive programs --- the status bar clock may be temporarily hidden to maximize refresh rate.
 
 \manualfig[0.55\textwidth]{CC.png}{CC program displaying live transcription. Text scrolls upward as new speech is detected.}
 
@@ -791,13 +791,9 @@ At \textbf{ULTRA write speed}, the display is split into two zones:
 
 \noindent At \textbf{NORM} or \textbf{SLOW} write speeds, the tentative zone is disabled and all six rows are used for finalized text only, since the slower refresh rate cannot keep up with progressive updates.
 
-The transcription model runs entirely on your local machine --- no audio is sent to external servers. Inference uses \textbf{Vulkan GPU acceleration} on NVIDIA and AMD GPUs, with automatic CPU fallback if no compatible GPU is available.
+The transcription model runs entirely on your local machine --- no audio is sent to external servers. Inference uses \textbf{Vulkan GPU acceleration} on NVIDIA and AMD GPUs, with automatic CPU fallback if no compatible GPU is available. On Linux, audio capture uses \textbf{PulseAudio}.
 
 Due to the CRT's ASCII-only character set, all transcription output is \textbf{automatically translated to English}. Non-English speech is translated in real time; English speech passes through unchanged. This means CC functions as both a captioning and a live translation tool.
-
-\begin{notebox}
-The \texttt{translate} flag is only supported by full multilingual models (e.g., \texttt{large-v3}, \texttt{medium}, \texttt{small}, \texttt{base}). Turbo and distilled models (e.g., \texttt{large-v3-turbo}) do not support translation --- they will transcribe in the detected language only. The desktop app CC tab shows the current translation status.
-\end{notebox}
 
 \subsubsection{Model Installation}
 
@@ -1002,7 +998,6 @@ Cryptocurrency symbols (BTC, DOGE, ETH, etc.) are automatically suffixed with \t
 \begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
   \item[TRACK] Tracker battery levels and connection status via SteamVR/OpenVR.
   \item[MAP] A camera-based VRChat overhead minimap.
-  \item[DBG] An alignment grid useful for program developers, or to test data transmission integrity for remote users.
 \end{description}
 
 % ============================================================================
@@ -1042,6 +1037,15 @@ If you wish to make the device \textbf{only locally interactive} (preventing oth
 
 The Yip-Boi's display is driven by a \textbf{256-glyph Character ROM}, supplied on the included 3.5'' floppy disk. Every character, icon, box-drawing element, and inverted variant is stored in a single 16$\times$16 atlas grid.
 
+\begin{figure}[H]
+  \centering
+  \fcolorbox{darkgreen}{screenbg}{%
+    \includegraphics[width=0.3\textwidth]{WilliamsTube_PDARom.png}%
+  }
+  \par\vspace{0.3em}
+  {\footnotesize\ttfamily The 256-glyph Character ROM atlas (16$\times$16 grid).}
+\end{figure}
+
 \begin{center}
 {\small
 \begin{tabular}{ccl}
@@ -1073,10 +1077,6 @@ The visual sense of the render texture is built up as the write head scans aroun
 \subsection{Is a bitmap mode possible?}
 
 Yes! The \textbf{IMG} program (see Section~\ref{sec:img}) renders arbitrary images in a bitmap display mode. Its appearance is much like a dot matrix printer or fax machine --- images are drawn character-by-character, each one truly transmitted from your computer into VRChat. Place images in the \texttt{assets/images} directory and select them from the list.
-
-\subsection{My inputs aren't registering!}
-
-\textbf{ALOCK} (autolock) is enabled by default. Check the bottom-left of the status bar --- if you see the lock icon, press \key{SEL} three times rapidly to unlock. You can adjust the autolock timeout or disable it entirely in the CONF program (see Section~\ref{sec:conf}).
 
 \subsection{Can I make my own programs?}
 
@@ -1256,6 +1256,22 @@ If nothing is displaying at all, see Section~\ref{sec:blankdisplay} above. If yo
 \subsection{Remote users see missing characters}
 
 Your write speed is too fast for network sync. Switch to SLOW in CONF for reliable remote viewing. Some programs, like IMG, will do one pass quickly and then slow down to sync data for remote players.
+
+\subsection{My inputs aren't registering!}
+
+\textbf{ALOCK} (autolock) is enabled by default. Check the bottom-left of the status bar --- if you see the lock icon, press \key{SEL} three times rapidly to unlock. You can adjust the autolock timeout or disable it entirely in the CONF program (see Section~\ref{sec:conf}).
+
+\subsection{My output looks misaligned on the CRT!}
+
+\begin{itemize}[leftmargin=2em, nosep]
+  \item Check the \textbf{Display} tab in the Yip OS desktop app and reset \textbf{Y Offset}, \textbf{Y Scale}, and \textbf{Y Curve}.
+  \item Check your Williams Tube asset in the Hierarchy and make sure you don't have any overrides affecting its positioning or scale.
+  \item Delete the asset from your avatar and Project View and import fresh.
+\end{itemize}
+
+\subsection{When people move around I see weird lines or nametags in the CRT}
+
+The Williams Tube camera lives on the \textbf{UiMenu} layer, out of necessity, and anything else that draws to that layer (such as nametags) will be added to the Render Texture. Refresh the screen (such as pressing \key{BACK}) to clear it.
 
 % ============================================================================
 % APPENDICES
