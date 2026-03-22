@@ -8,7 +8,7 @@
 
 ; Define installer name and output file
 Name "YipOS"
-OutFile "..\YipOS v1.0 Setup.exe"
+OutFile "..\YipOS v1.1.0 Setup.exe"
 
 ; Default installation directory
 InstallDir "$PROGRAMFILES\YipOS"
@@ -148,7 +148,7 @@ Section "Install"
     WriteRegStr HKLM "${UNINSTKEY}" "InstallLocation" "$INSTDIR"
     WriteRegStr HKLM "${UNINSTKEY}" "DisplayIcon" "$INSTDIR\yip_os.exe,0"
     WriteRegStr HKLM "${UNINSTKEY}" "Publisher" "Foxipso"
-    WriteRegStr HKLM "${UNINSTKEY}" "DisplayVersion" "1.0"
+    WriteRegStr HKLM "${UNINSTKEY}" "DisplayVersion" "1.1.0"
     WriteRegStr HKLM "${UNINSTKEY}" "URLInfoAbout" "https://foxipso.com"
 
     ; Get size of installation directory
