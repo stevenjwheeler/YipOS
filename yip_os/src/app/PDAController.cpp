@@ -12,6 +12,7 @@
 #include "core/Glyphs.hpp"
 #include "core/Config.hpp"
 #include "core/Logger.hpp"
+#include "core/TimeUtil.hpp"
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -23,11 +24,6 @@
 namespace YipOS {
 
 using namespace Glyphs;
-
-static double MonotonicNow() {
-    return std::chrono::duration<double>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
-}
 
 PDAController::PDAController(PDADisplay& display, NetTracker& net_tracker, Config& config, float refresh_interval)
     : display_(display), net_tracker_(net_tracker), config_(config),

@@ -2,18 +2,13 @@
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Logger.hpp"
+#include "core/TimeUtil.hpp"
 #include <cstdio>
 #include <algorithm>
-#include <chrono>
 
 namespace YipOS {
 
 using namespace Glyphs;
-
-static double MonotonicNow() {
-    return std::chrono::duration<double>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
-}
 
 TwitchScreen::TwitchScreen(PDAController& pda) : Screen(pda) {
     name = "TWTCH";

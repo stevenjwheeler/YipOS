@@ -1,5 +1,5 @@
 #include "NetTracker.hpp"
-#include <chrono>
+#include "core/TimeUtil.hpp"
 #include <cstdio>
 #include <algorithm>
 
@@ -17,11 +17,6 @@
 #endif
 
 namespace YipOS {
-
-static double MonotonicNow() {
-    return std::chrono::duration<double>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
-}
 
 NetTracker::NetTracker(const std::string& preferred_iface) : session_start_(MonotonicNow()) {
     auto interfaces = ReadAllInterfaces();

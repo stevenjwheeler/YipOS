@@ -488,9 +488,19 @@ void UIManager::RenderOSCTab(PDAController& pda, Config& config, OSCManager& osc
         ImGui::TextDisabled("Port to receive OSC messages on (requires restart)");
 
         ImGui::Spacing();
-        if (ImGui::Button("Save")) {
+        if (ImGui::Button("Apply & Save")) {
             config.osc_ip = ip_buf;
+            osc.SetSendTarget(config.osc_ip, config.osc_send_port);
+            manual_osc_override_ = true;
             if (!config_path_.empty()) config.SaveToFile(config_path_);
+        }
+        if (manual_osc_override_) {
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "Manual override active (OSCQuery won't change port)");
+            ImGui::SameLine();
+            if (ImGui::SmallButton("Release")) {
+                manual_osc_override_ = false;
+            }
         }
     }
 

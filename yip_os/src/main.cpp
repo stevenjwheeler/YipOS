@@ -303,7 +303,8 @@ int main(int argc, char* argv[]) {
                     pda.ToggleCursor();
                     net_tracker.Sample();
                     // Update OSC send target if OSCQuery discovered VRChat
-                    if (osc_query) {
+                    // (skip if user has manually overridden the port)
+                    if (osc_query && !ui.IsManualOSCOverride()) {
                         auto port = osc_query->GetVRChatOSCPort();
                         if (port && *port != last_vrc_osc_port) {
                             osc.SetSendTarget("127.0.0.1", *port);

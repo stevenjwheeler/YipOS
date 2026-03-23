@@ -1,13 +1,12 @@
 #include "OSCManager.hpp"
 #include "core/Logger.hpp"
+#include "core/TimeUtil.hpp"
 
 #ifdef _WIN32
-    #include <WS2tcpip.h>
     #pragma comment(lib, "ws2_32.lib")
     using socklen_t = int;
 #else
     #include <sys/socket.h>
-    #include <netinet/in.h>
     #include <arpa/inet.h>
     #include <unistd.h>
 #endif
@@ -16,19 +15,13 @@
 
 #include <oscpp/client.hpp>
 #include <oscpp/server.hpp>
-#include <chrono>
 
 namespace YipOS {
 
-static double Now() {
-    return std::chrono::duration<double>(
-        std::chrono::steady_clock::now().time_since_epoch()).count();
-}
-
-// Helper to cast void* server_addr_ to sockaddr_in*
-static sockaddr_in* Addr(void* p) { return static_cast<sockaddr_in*>(p); }
-
 static inline bool SocketValid(socket_t s) { return s != INVALID_SOCK; }
+
+// Pad size to 4-byte boundary (OSC alignment)
+static inline size_t OscPad(size_t n) { return (n + 3) & ~size_t(3); }
 
 static inline void CloseSocket(socket_t& s) {
     if (!SocketValid(s)) return;
@@ -62,11 +55,11 @@ bool OSCManager::Initialize(const std::string& address, int send_port, int liste
         return false;
     }
 
-    auto* sa = new sockaddr_in{};
-    sa->sin_family = AF_INET;
-    sa->sin_port = htons(static_cast<uint16_t>(send_port));
-    inet_pton(AF_INET, address.c_str(), &sa->sin_addr);
-    server_addr_ = sa;
+    server_addr_ = {};
+    server_addr_.sin_family = AF_INET;
+    server_addr_.sin_port = htons(static_cast<uint16_t>(send_port));
+    inet_pton(AF_INET, address.c_str(), &server_addr_.sin_addr);
+    server_addr_valid_ = true;
 
     // Receive socket
     recv_socket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -127,8 +120,7 @@ void OSCManager::Shutdown() {
     }
     CloseSocket(send_socket_);
     CloseSocket(recv_socket_);
-    delete Addr(server_addr_);
-    server_addr_ = nullptr;
+    server_addr_valid_ = false;
 
 #ifdef _WIN32
     WSACleanup();
@@ -138,16 +130,15 @@ void OSCManager::Shutdown() {
 
 void OSCManager::SetSendTarget(const std::string& address, int port) {
     std::lock_guard<std::mutex> lock(send_mutex_);
-    if (server_addr_) {
-        auto* sa = Addr(server_addr_);
-        sa->sin_port = htons(static_cast<uint16_t>(port));
-        inet_pton(AF_INET, address.c_str(), &sa->sin_addr);
-        Logger::Info("OSC send target updated: " + address + ":" + std::to_string(port));
-    }
+    server_addr_.sin_port = htons(static_cast<uint16_t>(port));
+    inet_pton(AF_INET, address.c_str(), &server_addr_.sin_addr);
+    server_addr_valid_ = true;
+    Logger::Info("OSC send target updated: " + address + ":" + std::to_string(port));
 }
 
 void OSCManager::SendFloat(const std::string& path, float value) {
-    if (!SocketValid(send_socket_) || !server_addr_) return;
+    std::lock_guard<std::mutex> lock(send_mutex_);
+    if (!SocketValid(send_socket_) || !server_addr_valid_) return;
 
     try {
         OSCPP::Client::Packet packet(send_buffer_.data(), send_buffer_.size());
@@ -159,7 +150,7 @@ void OSCManager::SendFloat(const std::string& path, float value) {
                static_cast<const char*>(packet.data()),
                static_cast<int>(packet.size()),
                0,
-               reinterpret_cast<struct sockaddr*>(server_addr_),
+               reinterpret_cast<struct sockaddr*>(&server_addr_),
                sizeof(sockaddr_in));
 
         LogSend(path, value);
@@ -169,18 +160,14 @@ void OSCManager::SendFloat(const std::string& path, float value) {
 }
 
 void OSCManager::SendBool(const std::string& path, bool value) {
-    if (!SocketValid(send_socket_) || !server_addr_) return;
+    std::lock_guard<std::mutex> lock(send_mutex_);
+    if (!SocketValid(send_socket_) || !server_addr_valid_) return;
 
     // OSC bools are type tags 'T'/'F' with zero data bytes.
     // oscpp has no native bool method, so we build the packet manually.
-    // Layout: address (padded to 4), type tag string ",T\0\0" or ",F\0\0" (4 bytes)
     try {
-        // Compute padded address length
-        size_t addr_len = path.size() + 1; // include null
-        size_t addr_padded = (addr_len + 3) & ~3u; // align to 4
-
-        // Type tag string: ",T\0" or ",F\0" padded to 4 bytes = ",T\0\0" / ",F\0\0"
-        constexpr size_t tag_padded = 4;
+        size_t addr_padded = OscPad(path.size() + 1);
+        constexpr size_t tag_padded = 4; // ",T\0\0" or ",F\0\0"
 
         size_t total = addr_padded + tag_padded;
         if (total > send_buffer_.size()) return;
@@ -195,7 +182,7 @@ void OSCManager::SendBool(const std::string& path, bool value) {
                send_buffer_.data(),
                static_cast<int>(total),
                0,
-               reinterpret_cast<struct sockaddr*>(server_addr_),
+               reinterpret_cast<struct sockaddr*>(&server_addr_),
                sizeof(sockaddr_in));
 
         LogSend(path, value ? 1.0f : 0.0f);
@@ -205,7 +192,8 @@ void OSCManager::SendBool(const std::string& path, bool value) {
 }
 
 void OSCManager::SendInt(const std::string& path, int value) {
-    if (!SocketValid(send_socket_) || !server_addr_) return;
+    std::lock_guard<std::mutex> lock(send_mutex_);
+    if (!SocketValid(send_socket_) || !server_addr_valid_) return;
 
     try {
         OSCPP::Client::Packet packet(send_buffer_.data(), send_buffer_.size());
@@ -217,7 +205,7 @@ void OSCManager::SendInt(const std::string& path, int value) {
                static_cast<const char*>(packet.data()),
                static_cast<int>(packet.size()),
                0,
-               reinterpret_cast<struct sockaddr*>(server_addr_),
+               reinterpret_cast<struct sockaddr*>(&server_addr_),
                sizeof(sockaddr_in));
 
         LogSend(path, static_cast<float>(value));
@@ -227,7 +215,8 @@ void OSCManager::SendInt(const std::string& path, int value) {
 }
 
 void OSCManager::SendString(const std::string& path, const std::string& value) {
-    if (!SocketValid(send_socket_) || !server_addr_) return;
+    std::lock_guard<std::mutex> lock(send_mutex_);
+    if (!SocketValid(send_socket_) || !server_addr_valid_) return;
 
     try {
         OSCPP::Client::Packet packet(send_buffer_.data(), send_buffer_.size());
@@ -239,7 +228,7 @@ void OSCManager::SendString(const std::string& path, const std::string& value) {
                static_cast<const char*>(packet.data()),
                static_cast<int>(packet.size()),
                0,
-               reinterpret_cast<struct sockaddr*>(server_addr_),
+               reinterpret_cast<struct sockaddr*>(&server_addr_),
                sizeof(sockaddr_in));
 
         LogSend(path, 0.0f);
@@ -249,21 +238,16 @@ void OSCManager::SendString(const std::string& path, const std::string& value) {
 }
 
 void OSCManager::SendChatbox(const std::string& text, bool send_immediately) {
-    if (!SocketValid(send_socket_) || !server_addr_) return;
+    std::lock_guard<std::mutex> lock(send_mutex_);
+    if (!SocketValid(send_socket_) || !server_addr_valid_) return;
 
     // /chatbox/input takes two args: string (s) + bool (T/F)
     // oscpp has no native bool arg, so we build the packet manually.
     try {
         const char* path = "/chatbox/input";
-        size_t addr_len = std::strlen(path) + 1;
-        size_t addr_padded = (addr_len + 3) & ~3u;
-
-        // Type tag: ",sT\0" or ",sF\0" = 4 bytes
-        constexpr size_t tag_padded = 4;
-
-        // String arg: text + null, padded to 4
-        size_t str_len = text.size() + 1;
-        size_t str_padded = (str_len + 3) & ~3u;
+        size_t addr_padded = OscPad(std::strlen(path) + 1);
+        constexpr size_t tag_padded = 4; // ",sT\0" or ",sF\0"
+        size_t str_padded = OscPad(text.size() + 1);
 
         size_t total = addr_padded + tag_padded + str_padded;
         if (total > send_buffer_.size()) return;
@@ -283,7 +267,7 @@ void OSCManager::SendChatbox(const std::string& text, bool send_immediately) {
                send_buffer_.data(),
                static_cast<int>(total),
                0,
-               reinterpret_cast<struct sockaddr*>(server_addr_),
+               reinterpret_cast<struct sockaddr*>(&server_addr_),
                sizeof(sockaddr_in));
 
         LogSend("/chatbox/input", 0.0f);
@@ -386,7 +370,7 @@ void OSCManager::LogSend(const std::string& path, float value) {
     if (recent_sends_.size() >= MAX_LOG_ENTRIES) {
         recent_sends_.erase(recent_sends_.begin());
     }
-    recent_sends_.push_back({path, value, Now()});
+    recent_sends_.push_back({path, value, MonotonicNow()});
 }
 
 void OSCManager::LogRecv(const std::string& path, float value) {
@@ -394,7 +378,7 @@ void OSCManager::LogRecv(const std::string& path, float value) {
     if (recent_recvs_.size() >= MAX_LOG_ENTRIES) {
         recent_recvs_.erase(recent_recvs_.begin());
     }
-    recent_recvs_.push_back({path, value, Now()});
+    recent_recvs_.push_back({path, value, MonotonicNow()});
 }
 
 std::vector<OSCManager::ParamEntry> OSCManager::GetRecentSends() const {

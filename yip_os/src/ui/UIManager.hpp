@@ -33,6 +33,7 @@ public:
     void AddLogLine(const std::string& line);
 
     void SetOSCQueryServer(OSCQueryServer* s) { osc_query_ = s; }
+    bool IsManualOSCOverride() const { return manual_osc_override_; }
     void SetConfigPath(const std::string& path) { config_path_ = path; }
     void SetAssetsPath(const std::string& path) { assets_path_ = path; }
     void SetDropCallback(std::function<void(const std::string&)> cb) { drop_callback_ = std::move(cb); }
@@ -93,6 +94,9 @@ private:
 
     // OSC Query server (optional, for status display)
     OSCQueryServer* osc_query_ = nullptr;
+
+    // When true, OSCQuery won't override the manually-set send target
+    bool manual_osc_override_ = false;
 
     // File drop callback
     std::function<void(const std::string&)> drop_callback_;

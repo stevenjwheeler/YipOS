@@ -11,9 +11,11 @@
 #include <cstdint>
 
 #ifdef _WIN32
+    #include <WS2tcpip.h>
     using socket_t = uintptr_t; // matches SOCKET (UINT_PTR) on both x86 and x64
     constexpr socket_t INVALID_SOCK = ~socket_t(0); // matches INVALID_SOCKET
 #else
+    #include <netinet/in.h>
     using socket_t = int;
     constexpr socket_t INVALID_SOCK = -1;
 #endif
@@ -62,8 +64,9 @@ private:
 
     socket_t send_socket_ = INVALID_SOCK;
     socket_t recv_socket_ = INVALID_SOCK;
-    void* server_addr_ = nullptr; // sockaddr_in*, allocated in Initialize
-    mutable std::mutex send_mutex_; // protects server_addr_ updates
+    sockaddr_in server_addr_{}; // send target address
+    bool server_addr_valid_ = false;
+    mutable std::mutex send_mutex_; // protects send_buffer_ and server_addr_
     int listen_port_ = 0;
     std::thread recv_thread_;
     std::atomic<bool> running_{false};
