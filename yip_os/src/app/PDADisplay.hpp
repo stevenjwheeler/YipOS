@@ -47,6 +47,10 @@ public:
     bool IsBuffered() const;
     int BufferedRemaining() const;
 
+    // Priority insert: writes go to front of queue (before remaining buffered content)
+    void BeginPriority();
+    void EndPriority();
+
     // Access
     ScreenBuffer& GetScreen() { return screen_; }
     float GetYOffset() const { return y_offset_; }
@@ -90,6 +94,7 @@ private:
     // Buffered write queue: (col, row_float, char_idx)
     std::vector<std::tuple<int, float, int>> write_queue_;
     bool buffered_ = false;
+    int priority_insert_pos_ = -1; // >=0 means priority mode active
     std::chrono::steady_clock::time_point last_write_time_{};
 };
 

@@ -34,10 +34,8 @@
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Glyphs.hpp"
-#include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <sstream>
+#include "core/TimeUtil.hpp"
+#include <unordered_map>
 
 namespace YipOS {
 
@@ -85,11 +83,7 @@ void Screen::RenderFrame(const std::string& title) {
 }
 
 void Screen::RenderStatusBar() {
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&time), "%H:%M:%S");
-    std::string clock_str = ss.str();
+    std::string clock_str = FormatClockString();
 
     display_.WriteGlyph(0, 7, G_BL_CORNER);
     RenderCursor();
@@ -103,11 +97,7 @@ void Screen::RenderStatusBar() {
 }
 
 void Screen::RenderClock() {
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&time), "%H:%M:%S");
-    std::string clock_str = ss.str();
+    std::string clock_str = FormatClockString();
     int col = COLS - 1 - static_cast<int>(clock_str.size());
     display_.WriteText(col, 7, clock_str);
     RenderStatusIcons();
@@ -136,37 +126,43 @@ void Screen::RenderCursor() {
 }
 
 std::unique_ptr<Screen> CreateScreen(const std::string& name, PDAController& pda) {
-    if (name == "STATS") return std::make_unique<StatsScreen>(pda);
-    if (name == "NET")   return std::make_unique<NetScreen>(pda);
-    if (name == "HEART") return std::make_unique<HeartScreen>(pda);
-    if (name == "SPVR")  return std::make_unique<StayScreen>(pda);
-    if (name == "CONF") return std::make_unique<ConfScreen>(pda);
-    if (name == "DBG")  return std::make_unique<CalibrateScreen>(pda);
-    if (name == "VRCX") return std::make_unique<VRCXScreen>(pda);
-    if (name == "VRCX_WORLDS") return std::make_unique<VRCXWorldsScreen>(pda);
-    if (name == "VRCX_WORLD_DETAIL") return std::make_unique<VRCXWorldDetailScreen>(pda);
-    if (name == "VRCX_FEED") return std::make_unique<VRCXFeedScreen>(pda);
-    if (name == "VRCX_FEED_DETAIL") return std::make_unique<VRCXFeedDetailScreen>(pda);
-    if (name == "VRCX_FRIEND_DETAIL") return std::make_unique<VRCXFriendDetailScreen>(pda);
-    if (name == "CC") return std::make_unique<CCScreen>(pda);
-    if (name == "CC_CONF") return std::make_unique<CCConfScreen>(pda);
-    if (name == "AVTR") return std::make_unique<AVTRScreen>(pda);
-    if (name == "AVTR_CHANGE") return std::make_unique<AVTRChangeScreen>(pda);
-    if (name == "AVTR_DETAIL") return std::make_unique<AVTRDetailScreen>(pda);
-    if (name == "AVTR_CTRL") return std::make_unique<AVTRCtrlScreen>(pda);
-    if (name == "VRCX_NOTIF") return std::make_unique<VRCXNotifScreen>(pda);
-    if (name == "LOCK") return std::make_unique<LockScreen>(pda);
-    if (name == "BFI") return std::make_unique<BFIScreen>(pda);
-    if (name == "BFI_PARAM") return std::make_unique<BFIParamScreen>(pda);
-    if (name == "CHAT") return std::make_unique<ChatScreen>(pda);
-    if (name == "CHAT_DTL") return std::make_unique<ChatDetailScreen>(pda);
-    if (name == "IMG") return std::make_unique<IMGScreen>(pda);
-    if (name == "TEXT") return std::make_unique<TEXTScreen>(pda);
-    if (name == "MEDIA") return std::make_unique<MediaScreen>(pda);
-    if (name == "STONK") return std::make_unique<StonkScreen>(pda);
-    if (name == "STONK_LIST") return std::make_unique<StonkListScreen>(pda);
-    if (name == "TWTCH") return std::make_unique<TwitchScreen>(pda);
-    if (name == "TWTCH_DTL") return std::make_unique<TwitchDetailScreen>(pda);
+    using Factory = std::unique_ptr<Screen>(*)(PDAController&);
+    static const std::unordered_map<std::string, Factory> registry = {
+        {"STATS",              [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<StatsScreen>(p); }},
+        {"NET",                [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<NetScreen>(p); }},
+        {"HEART",              [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<HeartScreen>(p); }},
+        {"SPVR",               [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<StayScreen>(p); }},
+        {"CONF",               [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<ConfScreen>(p); }},
+        {"DBG",                [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<CalibrateScreen>(p); }},
+        {"VRCX",               [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<VRCXScreen>(p); }},
+        {"VRCX_WORLDS",        [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<VRCXWorldsScreen>(p); }},
+        {"VRCX_WORLD_DETAIL",  [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<VRCXWorldDetailScreen>(p); }},
+        {"VRCX_FEED",          [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<VRCXFeedScreen>(p); }},
+        {"VRCX_FEED_DETAIL",   [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<VRCXFeedDetailScreen>(p); }},
+        {"VRCX_FRIEND_DETAIL", [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<VRCXFriendDetailScreen>(p); }},
+        {"CC",                 [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<CCScreen>(p); }},
+        {"CC_CONF",            [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<CCConfScreen>(p); }},
+        {"AVTR",               [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<AVTRScreen>(p); }},
+        {"AVTR_CHANGE",        [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<AVTRChangeScreen>(p); }},
+        {"AVTR_DETAIL",        [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<AVTRDetailScreen>(p); }},
+        {"AVTR_CTRL",          [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<AVTRCtrlScreen>(p); }},
+        {"VRCX_NOTIF",         [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<VRCXNotifScreen>(p); }},
+        {"LOCK",               [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<LockScreen>(p); }},
+        {"BFI",                [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<BFIScreen>(p); }},
+        {"BFI_PARAM",          [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<BFIParamScreen>(p); }},
+        {"CHAT",               [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<ChatScreen>(p); }},
+        {"CHAT_DTL",           [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<ChatDetailScreen>(p); }},
+        {"IMG",                [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<IMGScreen>(p); }},
+        {"TEXT",               [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<TEXTScreen>(p); }},
+        {"MEDIA",              [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<MediaScreen>(p); }},
+        {"STONK",              [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<StonkScreen>(p); }},
+        {"STONK_LIST",         [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<StonkListScreen>(p); }},
+        {"TWTCH",              [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<TwitchScreen>(p); }},
+        {"TWTCH_DTL",          [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<TwitchDetailScreen>(p); }},
+    };
+
+    auto it = registry.find(name);
+    if (it != registry.end()) return it->second(pda);
     return nullptr;
 }
 

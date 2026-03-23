@@ -5,16 +5,11 @@
 #include "net/OSCManager.hpp"
 #include "core/Logger.hpp"
 #include <cstdio>
-#include <algorithm>
-#include <cstring>
 
 namespace YipOS {
 
 using namespace Glyphs;
 
-// Strip VRCFury prefix from param names for display
-// Handles both "VF###/Path/Toggle" and "VF###_Path/Toggle" patterns
-// For underscore variant like "VF127_Accessories/PDA/Enable", strips up to first '/'
 static std::string StripVFPrefix(const std::string& name) {
     if (name.size() >= 4 && name[0] == 'V' && name[1] == 'F') {
         size_t i = 2;
@@ -24,12 +19,10 @@ static std::string StripVFPrefix(const std::string& name) {
                 return name.substr(i + 1);
             }
             if (name[i] == '_') {
-                // VF###_Category/Sub/Name → strip to after first '/'
                 size_t slash = name.find('/', i + 1);
                 if (slash != std::string::npos) {
                     return name.substr(slash + 1);
                 }
-                // No slash after underscore — just strip VF###_
                 return name.substr(i + 1);
             }
         }
@@ -37,7 +30,7 @@ static std::string StripVFPrefix(const std::string& name) {
     return name;
 }
 
-AVTRCtrlScreen::AVTRCtrlScreen(PDAController& pda) : Screen(pda) {
+AVTRCtrlScreen::AVTRCtrlScreen(PDAController& pda) : ListScreen(pda) {
     name = "CTRL";
     macro_index = 19;
     LoadData();
@@ -47,7 +40,6 @@ void AVTRCtrlScreen::LoadData() {
     auto* data = pda_.GetAvatarData();
     if (!data) return;
 
-    // Auto-select first avatar if none is current
     if (data->GetCurrentAvatarId().empty() && !data->GetAvatars().empty()) {
         data->SetCurrentAvatarId(data->GetAvatars().front().id);
     }
@@ -63,28 +55,45 @@ void AVTRCtrlScreen::LoadData() {
     }
 }
 
-int AVTRCtrlScreen::PageCount() const {
-    int n = static_cast<int>(toggles_.size());
-    if (n == 0) return 1;
-    return (n + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE;
+void AVTRCtrlScreen::RenderEmpty() {
+    auto* data = pda_.GetAvatarData();
+    if (!data || data->GetCurrentAvatarId().empty()) {
+        display_.WriteText(2, 2, "No avatar selected");
+        display_.WriteText(2, 3, "Use CHANGE first");
+    } else {
+        display_.WriteText(2, 2, "No toggles found");
+    }
 }
 
-int AVTRCtrlScreen::ItemCountOnPage() const {
-    if (toggles_.empty()) return 0;
-    int base = page_ * ROWS_PER_PAGE;
-    int remaining = static_cast<int>(toggles_.size()) - base;
-    return std::min(remaining, ROWS_PER_PAGE);
+void AVTRCtrlScreen::Render() {
+    RenderFrame("CTRL");
+
+    if (toggles_.empty()) {
+        RenderEmpty();
+    } else {
+        RenderRows();
+    }
+
+    RenderStatusBar();
+}
+
+void AVTRCtrlScreen::RenderDynamic() {
+    if (!toggles_.empty()) {
+        RenderRows();
+        RenderPageIndicators();
+    }
+    RenderClock();
+    RenderCursor();
 }
 
 void AVTRCtrlScreen::RenderRow(int i, bool selected) {
     auto& d = display_;
-    int idx = page_ * ROWS_PER_PAGE + i;
+    int idx = GlobalIndex(i);
     int row = 1 + i;
     if (idx >= static_cast<int>(toggles_.size())) return;
 
     auto& t = toggles_[idx];
 
-    // Format: "+ParamName" or "-ParamName"
     char indicator = t.on ? '+' : '-';
     int content_width = COLS - 2;
     std::string pname = StripVFPrefix(t.param->name);
@@ -103,16 +112,8 @@ void AVTRCtrlScreen::RenderRow(int i, bool selected) {
     }
 }
 
-void AVTRCtrlScreen::RenderRows() {
-    for (int i = 0; i < ROWS_PER_PAGE; i++) {
-        int idx = page_ * ROWS_PER_PAGE + i;
-        if (idx >= static_cast<int>(toggles_.size())) break;
-        RenderRow(i, i == cursor_);
-    }
-}
-
 void AVTRCtrlScreen::WriteSelectionMark(int i, bool selected) {
-    int idx = page_ * ROWS_PER_PAGE + i;
+    int idx = GlobalIndex(i);
     int row = 1 + i;
     if (idx >= static_cast<int>(toggles_.size())) return;
 
@@ -130,118 +131,27 @@ void AVTRCtrlScreen::WriteSelectionMark(int i, bool selected) {
     }
 }
 
-void AVTRCtrlScreen::RefreshCursorRows(int old_cursor, int new_cursor) {
+bool AVTRCtrlScreen::OnSelect(int index) {
+    if (index >= static_cast<int>(toggles_.size())) return true;
+
+    auto& t = toggles_[index];
+    t.on = !t.on;
+
+    auto* osc = pda_.GetOSCManager();
+    if (osc && t.param) {
+        osc->SendBool(t.param->input_address, t.on);
+        osc->SendInt(t.param->input_address, t.on ? 1 : 0);
+        Logger::Info("Toggle " + t.param->name + " -> " +
+                     t.param->input_address + " = " +
+                     (t.on ? "ON" : "OFF"));
+    }
+
+    // Re-render just this row
     display_.CancelBuffered();
     display_.BeginBuffered();
-    if (old_cursor != new_cursor && old_cursor >= 0 && old_cursor < ItemCountOnPage()) {
-        WriteSelectionMark(old_cursor, false);
-    }
-    if (new_cursor >= 0 && new_cursor < ItemCountOnPage()) {
-        WriteSelectionMark(new_cursor, true);
-    }
+    RenderRow(cursor_, true);
     RenderPageIndicators();
-}
-
-void AVTRCtrlScreen::RenderPageIndicators() {
-    auto& d = display_;
-    if (!toggles_.empty()) {
-        int global_idx = page_ * ROWS_PER_PAGE + cursor_ + 1;
-        int total = static_cast<int>(toggles_.size());
-        char pos[12];
-        std::snprintf(pos, sizeof(pos), "%d/%d", global_idx, total);
-        d.WriteText(5, 7, pos);
-    }
-
-    if (PageCount() <= 1) return;
-    if (page_ > 0) {
-        d.WriteGlyph(0, 3, G_UP);
-    }
-    if (page_ < PageCount() - 1) {
-        d.WriteGlyph(0, 5, G_DOWN);
-    }
-}
-
-void AVTRCtrlScreen::Render() {
-    RenderFrame("CTRL");
-
-    if (toggles_.empty()) {
-        auto* data = pda_.GetAvatarData();
-        if (!data || data->GetCurrentAvatarId().empty()) {
-            display_.WriteText(2, 2, "No avatar selected");
-            display_.WriteText(2, 3, "Use CHANGE first");
-        } else {
-            display_.WriteText(2, 2, "No toggles found");
-        }
-    } else {
-        RenderRows();
-    }
-
-    RenderStatusBar();
-}
-
-void AVTRCtrlScreen::RenderDynamic() {
-    if (!toggles_.empty()) {
-        RenderRows();
-        RenderPageIndicators();
-    }
-    RenderClock();
-    RenderCursor();
-}
-
-bool AVTRCtrlScreen::OnInput(const std::string& key) {
-    if (toggles_.empty()) return false;
-
-    if (key == "Joystick") {
-        int items = ItemCountOnPage();
-        if (items == 0) return true;
-        int old_cursor = cursor_;
-        cursor_ = (cursor_ + 1) % items;
-        RefreshCursorRows(old_cursor, cursor_);
-        return true;
-    }
-
-    if (key == "TR") {
-        // Toggle the selected parameter
-        int idx = page_ * ROWS_PER_PAGE + cursor_;
-        if (idx < static_cast<int>(toggles_.size())) {
-            auto& t = toggles_[idx];
-            t.on = !t.on;
-
-            auto* osc = pda_.GetOSCManager();
-            if (osc && t.param) {
-                // Always send as Bool + Int for maximum VRChat compatibility.
-                // VRCFury and some animator setups ignore OSC Bool (T/F) type
-                // tags but respond to Int 0/1.  Sending both covers all cases.
-                osc->SendBool(t.param->input_address, t.on);
-                osc->SendInt(t.param->input_address, t.on ? 1 : 0);
-                Logger::Info("Toggle " + t.param->name + " -> " +
-                             t.param->input_address + " = " +
-                             (t.on ? "ON" : "OFF"));
-            }
-
-            // Re-render just this row (keeps page position)
-            display_.CancelBuffered();
-            display_.BeginBuffered();
-            RenderRow(cursor_, true);
-            RenderPageIndicators();
-        }
-        return true;
-    }
-
-    if (key == "ML" && PageCount() > 1 && page_ > 0) {
-        page_--;
-        cursor_ = 0;
-        pda_.StartRender(this);
-        return true;
-    }
-    if (key == "BL" && PageCount() > 1 && page_ < PageCount() - 1) {
-        page_++;
-        cursor_ = 0;
-        pda_.StartRender(this);
-        return true;
-    }
-
-    return false;
+    return true;
 }
 
 } // namespace YipOS

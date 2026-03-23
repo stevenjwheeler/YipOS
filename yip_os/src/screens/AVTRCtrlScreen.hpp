@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Screen.hpp"
+#include "ListScreen.hpp"
 #include <string>
 #include <vector>
 
@@ -8,23 +8,22 @@ namespace YipOS {
 
 struct VRCAvatarParam;
 
-class AVTRCtrlScreen : public Screen {
+class AVTRCtrlScreen : public ListScreen {
 public:
     AVTRCtrlScreen(PDAController& pda);
 
     void Render() override;
     void RenderDynamic() override;
-    bool OnInput(const std::string& key) override;
+
+protected:
+    int ItemCount() const override { return static_cast<int>(toggles_.size()); }
+    void RenderRow(int i, bool selected) override;
+    void WriteSelectionMark(int i, bool selected) override;
+    void RenderEmpty() override;
+    bool OnSelect(int index) override;
 
 private:
     void LoadData();
-    void RenderRow(int i, bool selected);
-    void RenderRows();
-    void RefreshCursorRows(int old_cursor, int new_cursor);
-    void WriteSelectionMark(int i, bool selected);
-    void RenderPageIndicators();
-    int PageCount() const;
-    int ItemCountOnPage() const;
 
     struct ToggleState {
         const VRCAvatarParam* param = nullptr;
@@ -32,10 +31,6 @@ private:
     };
 
     std::vector<ToggleState> toggles_;
-    int page_ = 0;
-    int cursor_ = 0;
-    static constexpr int ROWS_PER_PAGE = 6;
-    static constexpr int SEL_WIDTH = 3;
 };
 
 } // namespace YipOS

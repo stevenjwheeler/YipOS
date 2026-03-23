@@ -12,32 +12,26 @@ namespace YipOS {
 using namespace Glyphs;
 namespace fs = std::filesystem;
 
-// Bitmap grid constants (must match animator setup: 32x32)
-static constexpr int BMP_COLS = VQEncoder::IMG_COLS; // 32
-static constexpr int BMP_ROWS = VQEncoder::IMG_ROWS; // 32
+static constexpr int BMP_COLS = VQEncoder::IMG_COLS;
+static constexpr int BMP_ROWS = VQEncoder::IMG_ROWS;
 
-IMGScreen::IMGScreen(PDAController& pda) : Screen(pda) {
+IMGScreen::IMGScreen(PDAController& pda) : ListScreen(pda) {
     name = "IMG";
-    macro_index = 27; // IMG list macro slot
-    update_interval = 1.0f; // check for drops every second
+    macro_index = 27;
+    update_interval = 1.0f;
 
-    // Use the resolved assets path from main.cpp
     std::string assets = pda_.GetAssetsPath();
     if (assets.empty()) assets = "assets";
 
-    // Images directory
     fs::path img_dir = fs::path(assets) / "images";
     if (fs::exists(img_dir) && fs::is_directory(img_dir)) {
         images_dir_ = img_dir.string();
     } else {
-        // Fallback: images directly in assets
         images_dir_ = assets;
     }
 
-    // Load VQ codebook from assets
     fs::path cb = fs::path(assets) / "vq_codebook.npy";
     if (!fs::exists(cb)) {
-        // Try repo root (for development)
         for (const auto& p : {"vq_codebook.npy", "../vq_codebook.npy",
                               "../../vq_codebook.npy"}) {
             if (fs::exists(p)) { cb = p; break; }
@@ -70,17 +64,9 @@ void IMGScreen::ScanImages() {
                  " images in " + images_dir_);
 }
 
-int IMGScreen::PageCount() const {
-    int n = static_cast<int>(image_files_.size());
-    if (n == 0) return 1;
-    return (n + ROWS_PER_PAGE - 1) / ROWS_PER_PAGE;
-}
-
-int IMGScreen::ItemCountOnPage() const {
-    if (image_files_.empty()) return 0;
-    int base = page_ * ROWS_PER_PAGE;
-    int remaining = static_cast<int>(image_files_.size()) - base;
-    return std::min(remaining, ROWS_PER_PAGE);
+void IMGScreen::RenderEmpty() {
+    display_.WriteText(2, 3, "No images found");
+    display_.WriteText(2, 4, images_dir_.substr(0, COLS - 4));
 }
 
 void IMGScreen::Render() {
@@ -112,22 +98,19 @@ void IMGScreen::RenderDynamic() {
 }
 
 void IMGScreen::RenderRow(int i, bool selected) {
-    int idx = page_ * ROWS_PER_PAGE + i;
+    int idx = GlobalIndex(i);
     int row = 1 + i;
     if (idx >= static_cast<int>(image_files_.size())) return;
 
     const auto& fname = image_files_[idx];
     int content_width = COLS - 2;
     std::string display_name = fname;
-    // Strip extension for cleaner display
     auto dot = display_name.rfind('.');
     if (dot != std::string::npos) display_name = display_name.substr(0, dot);
     if (static_cast<int>(display_name.size()) > content_width) {
         display_name = display_name.substr(0, content_width);
     }
 
-    // First 3 chars inverted = selection indicator, rest always plain
-    static constexpr int SEL_WIDTH = 3;
     for (int c = 0; c < static_cast<int>(display_name.size()); c++) {
         int ch = static_cast<int>(display_name[c]);
         if (ch < 32 || ch > 126) ch = 32;
@@ -136,21 +119,8 @@ void IMGScreen::RenderRow(int i, bool selected) {
     }
 }
 
-void IMGScreen::RenderRows() {
-    if (image_files_.empty()) {
-        display_.WriteText(2, 3, "No images found");
-        display_.WriteText(2, 4, images_dir_.substr(0, COLS - 4));
-        return;
-    }
-
-    int items = ItemCountOnPage();
-    for (int i = 0; i < items; i++) {
-        RenderRow(i, i == cursor_);
-    }
-}
-
 void IMGScreen::WriteSelectionMark(int i, bool selected) {
-    int idx = page_ * ROWS_PER_PAGE + i;
+    int idx = GlobalIndex(i);
     int row = 1 + i;
     if (idx >= static_cast<int>(image_files_.size())) return;
 
@@ -166,30 +136,12 @@ void IMGScreen::WriteSelectionMark(int i, bool selected) {
     }
 }
 
-void IMGScreen::RefreshCursorRows(int old_cursor, int new_cursor) {
-    display_.CancelBuffered();
-    display_.BeginBuffered();
-    if (old_cursor != new_cursor && old_cursor >= 0 && old_cursor < ItemCountOnPage()) {
-        WriteSelectionMark(old_cursor, false);
+bool IMGScreen::OnSelect(int index) {
+    if (index < static_cast<int>(image_files_.size())) {
+        std::string full_path = (fs::path(images_dir_) / image_files_[index]).string();
+        EnterDisplayMode(full_path);
     }
-    if (new_cursor >= 0 && new_cursor < ItemCountOnPage()) {
-        WriteSelectionMark(new_cursor, true);
-    }
-    RenderPageIndicators();
-}
-
-void IMGScreen::RenderPageIndicators() {
-    if (!image_files_.empty()) {
-        int global_idx = page_ * ROWS_PER_PAGE + cursor_ + 1;
-        int total = static_cast<int>(image_files_.size());
-        char pos[12];
-        std::snprintf(pos, sizeof(pos), "%d/%d", global_idx, total);
-        display_.WriteText(5, 7, pos);
-    }
-
-    if (PageCount() <= 1) return;
-    if (page_ > 0) display_.WriteGlyph(0, 3, G_UP);
-    if (page_ < PageCount() - 1) display_.WriteGlyph(0, 5, G_DOWN);
+    return true;
 }
 
 void IMGScreen::EnterDisplayMode(const std::string& image_path) {
@@ -208,17 +160,15 @@ void IMGScreen::EnterDisplayMode(const std::string& image_path) {
     mode_ = DISPLAY;
     skip_clock = true;
     handle_back = true;
-    refresh_interval = -1.0f; // disable auto-refresh; we manage passes ourselves
-    update_interval = 0.1f;   // fast polling for drops and pass management
+    refresh_interval = -1.0f;
+    update_interval = 0.1f;
 
     saved_write_delay_ = display_.GetWriteDelay();
 
-    // Clear and switch to bitmap mode
     display_.CancelBuffered();
     display_.ClearScreen();
     display_.SetBitmapMode();
 
-    // Start progressive passes: fast → medium → slow → done
     pass_ = 0;
     pass_done_ = false;
     StartPass();
@@ -245,20 +195,17 @@ void IMGScreen::ExitDisplayMode() {
     skip_clock = false;
     handle_back = false;
     refresh_interval = 0;
-    update_interval = 1.0f; // back to slow polling in list mode
+    update_interval = 1.0f;
     pass_active_ = false;
     pass_done_ = false;
 
-    // Restore write delay
     display_.SetWriteDelay(saved_write_delay_);
 
-    // Re-render list
     pda_.StartRender(this);
     Logger::Info("IMG: back to list");
 }
 
 void IMGScreen::WriteBitmap() {
-    // In bitmap mode, MoveCursor normalizes for 32x32 grid automatically
     for (int r = 0; r < BMP_ROWS; r++) {
         for (int c = 0; c < BMP_COLS; c++) {
             display_.WriteChar(c, r, vq_indices_[r][c]);
@@ -267,35 +214,29 @@ void IMGScreen::WriteBitmap() {
 }
 
 void IMGScreen::Update() {
-    // Check for dropped image — clear any prior display and show the new one
     std::string drop = pda_.ConsumeDroppedImagePath();
     if (!drop.empty()) {
         Logger::Info("IMG: Update() consumed drop, cancelling current render (" +
                      std::to_string(display_.BufferedRemaining()) + " writes pending)");
         DropImage(drop);
-        return; // don't process passes this tick, we just started fresh
+        return;
     }
 
-    // Progressive pass management: when buffer drains, start next pass
     if (mode_ == DISPLAY && pass_active_ && !display_.IsBuffered()) {
         pass_active_ = false;
         pass_++;
         if (pass_ < PASS_COUNT) {
-            // More passes to go
             StartPass();
         } else if (!pass_done_) {
-            // Final slow pass for good measure, then stop
             StartPass();
             pass_done_ = true;
         }
-        // After pass_done_, do nothing — image stays on screen, no more redraws
     }
 }
 
 void IMGScreen::DropImage(const std::string& path) {
     Logger::Info("IMG: dropped image " + path);
 
-    // Copy the image into the images directory if it's not already there
     fs::path src(path);
     fs::path dst = fs::path(images_dir_) / src.filename();
     if (src != dst && fs::exists(src)) {
@@ -303,7 +244,7 @@ void IMGScreen::DropImage(const std::string& path) {
             fs::create_directories(images_dir_);
             fs::copy_file(src, dst, fs::copy_options::overwrite_existing);
             Logger::Info("IMG: copied " + src.filename().string() + " to images directory");
-            ScanImages(); // refresh the file list
+            ScanImages();
         } catch (const fs::filesystem_error& e) {
             Logger::Warning("IMG: failed to copy image: " + std::string(e.what()));
         }
@@ -314,49 +255,14 @@ void IMGScreen::DropImage(const std::string& path) {
 
 bool IMGScreen::OnInput(const std::string& key) {
     if (mode_ == DISPLAY) {
-        // Any input in display mode goes back to list
         if (key == "TL" || key == "Joystick" || key == "TR") {
             ExitDisplayMode();
             return true;
         }
-        return true; // absorb all input in display mode
-    }
-
-    // LIST mode
-    if (image_files_.empty()) return false;
-
-    if (key == "Joystick") {
-        int items = ItemCountOnPage();
-        if (items == 0) return true;
-        int old_cursor = cursor_;
-        cursor_ = (cursor_ + 1) % items;
-        RefreshCursorRows(old_cursor, cursor_);
         return true;
     }
 
-    if (key == "TR") {
-        int idx = page_ * ROWS_PER_PAGE + cursor_;
-        if (idx < static_cast<int>(image_files_.size())) {
-            std::string full_path = (fs::path(images_dir_) / image_files_[idx]).string();
-            EnterDisplayMode(full_path);
-        }
-        return true;
-    }
-
-    if (key == "ML" && PageCount() > 1 && page_ > 0) {
-        page_--;
-        cursor_ = 0;
-        pda_.StartRender(this);
-        return true;
-    }
-    if (key == "BL" && PageCount() > 1 && page_ < PageCount() - 1) {
-        page_++;
-        cursor_ = 0;
-        pda_.StartRender(this);
-        return true;
-    }
-
-    return false;
+    return ListScreen::OnInput(key);
 }
 
 } // namespace YipOS

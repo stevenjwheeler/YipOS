@@ -12,8 +12,8 @@ namespace YipOS {
 using namespace Glyphs;
 
 static bool IsPosPar(int idx) {
-    if (idx >= 0 && idx < PDAController::BFI_PARAM_COUNT)
-        return PDAController::BFI_PARAMS[idx].positive_only;
+    if (idx >= 0 && idx < BFI_PARAM_COUNT)
+        return BFI_PARAMS[idx].positive_only;
     return false;
 }
 
@@ -26,7 +26,7 @@ BFIScreen::BFIScreen(PDAController& pda) : Screen(pda) {
     dot_rows_.resize(GRAPH_WIDTH, -1);
 
     std::string p = pda.GetConfig().GetState("bfi.param", "2");
-    param_idx_ = std::clamp(std::stoi(p), 0, PDAController::BFI_PARAM_COUNT - 1);
+    param_idx_ = std::clamp(std::stoi(p), 0, BFI_PARAM_COUNT - 1);
     UpdateScale();
 }
 
@@ -50,7 +50,7 @@ void BFIScreen::Render() {
 void BFIScreen::RenderDynamic() {
     // Re-read param selection in case it changed via param picker
     std::string p = pda_.GetConfig().GetState("bfi.param", "2");
-    param_idx_ = std::clamp(std::stoi(p), 0, PDAController::BFI_PARAM_COUNT - 1);
+    param_idx_ = std::clamp(std::stoi(p), 0, BFI_PARAM_COUNT - 1);
     UpdateScale();
 
     RenderScaleBar();
@@ -77,7 +77,7 @@ void BFIScreen::RenderScaleBar() {
 
 void BFIScreen::RenderInfoLine() {
     auto& d = display_;
-    const char* pname = PDAController::BFI_PARAMS[param_idx_].display_name;
+    const char* pname = BFI_PARAMS[param_idx_].display_name;
 
     // Clear row 6 content area BUT stop before CONF button (cols 35-38)
     for (int c = 1; c < 34; c++)
@@ -126,7 +126,7 @@ void BFIScreen::ClearColumn(int pos) {
 void BFIScreen::Update() {
     // Re-read param selection from config (may have changed via param picker)
     std::string p = pda_.GetConfig().GetState("bfi.param", "2");
-    int new_idx = std::clamp(std::stoi(p), 0, PDAController::BFI_PARAM_COUNT - 1);
+    int new_idx = std::clamp(std::stoi(p), 0, BFI_PARAM_COUNT - 1);
     bool param_changed = (new_idx != param_idx_);
     if (param_changed) {
         param_idx_ = new_idx;

@@ -13,17 +13,19 @@ std::string Config::GetState(const std::string& key, const std::string& fallback
 
 void Config::SetState(const std::string& key, const std::string& value) {
     state[key] = value;
-    if (!config_path.empty()) {
-        SaveToFile(config_path);
-    }
+    dirty_ = true;
 }
 
 void Config::ClearState() {
     state.clear();
+    dirty_ = true;
     Logger::Info("NVRAM cleared");
-    if (!config_path.empty()) {
-        SaveToFile(config_path);
-    }
+}
+
+void Config::Flush() {
+    if (!dirty_ || config_path.empty()) return;
+    SaveToFile(config_path);
+    dirty_ = false;
 }
 
 bool Config::LoadFromFile(const std::string& path) {

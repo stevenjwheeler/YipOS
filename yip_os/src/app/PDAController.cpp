@@ -15,8 +15,6 @@
 #include "core/TimeUtil.hpp"
 #include <chrono>
 #include <ctime>
-#include <iomanip>
-#include <sstream>
 #include <cstring>
 #include <thread>
 #include <random>
@@ -386,11 +384,7 @@ void PDAController::UpdateClock() {
     // with UI renders between each, instead of blocking ~630ms.
     display_.BeginBuffered();
 
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now);
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&time), "%H:%M:%S");
-    std::string clock_str = ss.str();
+    std::string clock_str = FormatClockString();
     int col = COLS - 1 - static_cast<int>(clock_str.size());
     display_.WriteText(col, 7, clock_str);
 

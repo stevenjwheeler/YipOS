@@ -525,10 +525,10 @@ void UIManager::RenderOSCTab(PDAController& pda, Config& config, OSCManager& osc
 
     // --- BFI ---
     ImGui::Spacing();
-    ImGui::Text("BFI (BrainFlowsIntoVRChat) — %d params", PDAController::BFI_PARAM_COUNT);
+    ImGui::Text("BFI (BrainFlowsIntoVRChat) — %d params", BFI_PARAM_COUNT);
     ImGui::Checkbox("Auto BFI (1 Hz)", &sim_bfi_auto_);
     ImGui::SameLine();
-    ImGui::TextDisabled("Sends sine waves to all %d params", PDAController::BFI_PARAM_COUNT);
+    ImGui::TextDisabled("Sends sine waves to all %d params", BFI_PARAM_COUNT);
     // Auto BFI tick runs in TickSimulations()
 }
 
@@ -1288,8 +1288,8 @@ void UIManager::TickSimulations(PDAController& pda) {
         if (bfi_start_time == 0) bfi_start_time = now;
         if (now - last_bfi_send >= 1.0) {
             double t = now - bfi_start_time;  // relative time, keeps sin args small
-            for (int i = 0; i < PDAController::BFI_PARAM_COUNT; i++) {
-                bool is_pos = PDAController::BFI_PARAMS[i].positive_only;
+            for (int i = 0; i < BFI_PARAM_COUNT; i++) {
+                bool is_pos = BFI_PARAMS[i].positive_only;
                 float lo = is_pos ? 0.0f : -1.0f;
                 float hi = 1.0f;
                 float mid = (hi + lo) * 0.5f;

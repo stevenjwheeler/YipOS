@@ -48,8 +48,15 @@ struct Config {
     bool SaveToFile(const std::string& path) const;
     static void CreateDefault(const std::string& path);
 
-    // Set by main after load so SetState can auto-save
+    // Flush dirty state to disk (call periodically and at shutdown)
+    void Flush();
+    bool IsDirty() const { return dirty_; }
+
+    // Set by main after load so Flush knows where to write
     std::string config_path;
+
+private:
+    bool dirty_ = false;
 };
 
 } // namespace YipOS

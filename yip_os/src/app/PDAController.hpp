@@ -1,5 +1,6 @@
 #pragma once
 
+#include "screens/BFIData.hpp"
 #include <string>
 #include <vector>
 #include <queue>
@@ -213,51 +214,6 @@ public:
     bool HasHeartRate() const;
     static constexpr double HR_TIMEOUT = 10.0;  // consider HR stale after 10s
 
-    // BFI (BrainFlowsIntoVRChat) params (updated from OSC recv thread)
-    // Each entry: { "OSC/sub/path" (after "BFI/"), "DisplayName", is_positive_only }
-    struct BFIParamDef {
-        const char* osc_suffix;   // matched against address after "BFI/"
-        const char* display_name; // shown on screen (max ~14 chars)
-        bool positive_only;       // true = [0,1], false = [-1,1]
-    };
-    static constexpr int BFI_PARAM_COUNT = 26;
-    static constexpr BFIParamDef BFI_PARAMS[BFI_PARAM_COUNT] = {
-        // NeuroFB — Focus
-        {"NeuroFB/FocusAvg",       "FocusAvg",      false},
-        {"NeuroFB/FocusPosAvg",    "FocusPosAvg",   true},
-        {"NeuroFB/FocusLeft",      "FocusLeft",     false},
-        {"NeuroFB/FocusPosLeft",   "FocusPosLeft",  true},
-        {"NeuroFB/FocusRight",     "FocusRight",    false},
-        {"NeuroFB/FocusPosRight",  "FocusPosRight", true},
-        // NeuroFB — Relax
-        {"NeuroFB/RelaxAvg",       "RelaxAvg",      false},
-        {"NeuroFB/RelaxPosAvg",    "RelaxPosAvg",   true},
-        {"NeuroFB/RelaxLeft",      "RelaxLeft",     false},
-        {"NeuroFB/RelaxPosLeft",   "RelaxPosLeft",  true},
-        {"NeuroFB/RelaxRight",     "RelaxRight",    false},
-        {"NeuroFB/RelaxPosRight",  "RelaxPosRight", true},
-        // PwrBands — Avg
-        {"PwrBands/Avg/Delta",     "PB Delta",      true},
-        {"PwrBands/Avg/Theta",     "PB Theta",      true},
-        {"PwrBands/Avg/Alpha",     "PB Alpha",      true},
-        {"PwrBands/Avg/Beta",      "PB Beta",       true},
-        {"PwrBands/Avg/Gamma",     "PB Gamma",      true},
-        // Biometrics
-        {"Biometrics/OxygenPercent",     "O2 %",      true},
-        {"Biometrics/HeartBeatsPerSecond","Heart BPS", true},
-        {"Biometrics/BreathsPerSecond",  "Breath BPS",true},
-        // Addons
-        {"Addons/HueShift",        "HueShift",      true},
-        // Info
-        {"Info/BatteryLevel",      "Battery",       true},
-        {"Info/SecondsSinceLastUpdate", "LastUpdate", true},
-        // PwrBands — Left
-        {"PwrBands/Left/Alpha",    "PB L Alpha",    true},
-        // PwrBands — Right
-        {"PwrBands/Right/Alpha",   "PB R Alpha",    true},
-        // MLAction
-        {"MLAction/ActionH",       "ML ActionH",    false},
-    };
     void SetBFIParam(int index, float value);
     float GetBFIParam(int index) const;
     bool HasBFIData() const;

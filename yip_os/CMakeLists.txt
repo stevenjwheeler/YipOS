@@ -80,6 +80,7 @@ set(YIPOS_SOURCES
     src/app/PDADisplay.cpp
     src/app/PDAController.cpp
     src/screens/Screen.cpp
+    src/screens/ListScreen.cpp
     src/screens/HomeScreen.cpp
     src/screens/StatsScreen.cpp
     src/screens/NetScreen.cpp

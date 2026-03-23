@@ -1,6 +1,7 @@
 #include "PDADisplay.hpp"
 #include "net/OSCManager.hpp"
 #include "core/Logger.hpp"
+#include <algorithm>
 #include <cmath>
 #include <thread>
 #include <chrono>
@@ -76,7 +77,13 @@ void PDADisplay::SendWrite(int col, float row, int char_idx, bool sleep) {
 
 void PDADisplay::WriteChar(int col, float row, int char_idx) {
     if (buffered_) {
-        write_queue_.emplace_back(col, row, char_idx);
+        if (priority_insert_pos_ >= 0) {
+            write_queue_.insert(write_queue_.begin() + priority_insert_pos_,
+                                std::make_tuple(col, row, char_idx));
+            priority_insert_pos_++;
+        } else {
+            write_queue_.emplace_back(col, row, char_idx);
+        }
     } else {
         SendWrite(col, row, char_idx, true); // immediate: sleep for write_delay
     }
@@ -204,7 +211,45 @@ bool PDADisplay::FlushOne() {
 
 void PDADisplay::CancelBuffered() {
     buffered_ = false;
+    priority_insert_pos_ = -1;
     write_queue_.clear();
+}
+
+void PDADisplay::BeginPriority() {
+    // Priority writes insert at the front of the queue.
+    // If not already buffered, start buffering.
+    buffered_ = true;
+    priority_insert_pos_ = 0;
+}
+
+void PDADisplay::EndPriority() {
+    if (priority_insert_pos_ <= 0) {
+        priority_insert_pos_ = -1;
+        return;
+    }
+
+    // Remove later queue entries that write to the same (col, row) as any
+    // priority write — they carry stale content that would overwrite the
+    // priority values (e.g. selection marks).
+    int pcount = priority_insert_pos_;
+    priority_insert_pos_ = -1;
+
+    auto tail_begin = write_queue_.begin() + pcount;
+    auto tail_end = write_queue_.end();
+    write_queue_.erase(
+        std::remove_if(tail_begin, tail_end,
+            [&](const std::tuple<int, float, int>& entry) {
+                int col = std::get<0>(entry);
+                float row = std::get<1>(entry);
+                for (int i = 0; i < pcount; i++) {
+                    if (std::get<0>(write_queue_[i]) == col &&
+                        std::get<1>(write_queue_[i]) == row) {
+                        return true;
+                    }
+                }
+                return false;
+            }),
+        tail_end);
 }
 
 bool PDADisplay::IsBuffered() const {

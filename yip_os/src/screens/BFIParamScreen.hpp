@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Screen.hpp"
+#include "ListScreen.hpp"
 
 namespace YipOS {
 
-class BFIParamScreen : public Screen {
+class BFIParamScreen : public ListScreen {
 public:
     BFIParamScreen(PDAController& pda);
 
@@ -12,21 +12,15 @@ public:
     void RenderDynamic() override;
     bool OnInput(const std::string& key) override;
 
-private:
-    void RenderRow(int i, bool selected);
-    void RenderSelPrefix(int i, bool selected);
-    void RenderRows();
-    void RenderPageIndicators();
-    void RefreshCursorRows(int old_cursor, int new_cursor);
-    int PageCount() const;
-    int ItemCountOnPage() const;
+protected:
+    int ItemCount() const override;
+    void RenderRow(int i, bool selected) override;
+    void WriteSelectionMark(int i, bool selected) override;
+    bool OnSelect(int index) override;
 
-    int page_ = 0;
-    int cursor_ = 0;
+private:
     int active_idx_ = 0;  // currently selected param (shown with "+")
     int max_name_len_ = 0;
-    static constexpr int ROWS_PER_PAGE = 6;
-    static constexpr int SEL_WIDTH = 3;
 };
 
 } // namespace YipOS

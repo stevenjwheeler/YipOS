@@ -212,8 +212,8 @@ int main(int argc, char* argv[]) {
                 auto bfi_pos = address.find("BFI/");
                 if (bfi_pos != std::string::npos) {
                     std::string suffix = address.substr(bfi_pos + 4); // after "BFI/"
-                    for (int i = 0; i < YipOS::PDAController::BFI_PARAM_COUNT; i++) {
-                        if (suffix == YipOS::PDAController::BFI_PARAMS[i].osc_suffix) {
+                    for (int i = 0; i < YipOS::BFI_PARAM_COUNT; i++) {
+                        if (suffix == YipOS::BFI_PARAMS[i].osc_suffix) {
                             pda.SetBFIParam(i, value);
                             break;
                         }
@@ -311,6 +311,7 @@ int main(int argc, char* argv[]) {
                             last_vrc_osc_port = *port;
                         }
                     }
+                    config.Flush();
                     last_clock = now;
                 }
 
@@ -338,7 +339,7 @@ int main(int argc, char* argv[]) {
         ui.Shutdown();
         if (osc_query) osc_query->Stop();
         osc.Shutdown();
-        config.SaveToFile(configPath);
+        config.Flush();
         YipOS::Logger::Info("YipOS exiting normally");
         YipOS::Logger::Shutdown();
         return 0;
