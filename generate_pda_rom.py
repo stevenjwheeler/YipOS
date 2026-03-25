@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Generate the PDA ROM atlas for the Williams Tube wrist CRT.
 
-Produces a 128x256 RGBA atlas (16x16 grid, each cell 8x16 pixels).
+Produces a 256x512 RGBA atlas (16x16 grid, each cell 16x32 pixels).
+Source glyphs are CP437 8x16 bitmaps, upscaled 2x with nearest-neighbor.
 
 Atlas layout (per PDA_ARCHITECTURE.md):
     0-31:    Box-drawing, frame, fill, UI primitives
@@ -9,7 +10,7 @@ Atlas layout (per PDA_ARCHITECTURE.md):
     128-159: Custom PDA icons (signal, heart, battery, music, etc.)
     160-255: Inverted ASCII (mirrors 32-127 with fg/bg swapped)
 
-Glyph source: CP437 8x16 VGA ROM font bitmaps.
+Glyph source: CP437 8x16 VGA ROM font bitmaps, 2x upscaled.
 
 Usage:
     python3 generate_pda_rom.py [--output WilliamsTube_PDARom.png]
@@ -21,10 +22,12 @@ import shutil
 
 from PIL import Image
 
-CELL_W, CELL_H = 8, 16
+SRC_W, SRC_H = 8, 16             # Source CP437 bitmap dimensions
+SCALE = 2                         # Nearest-neighbor upscale factor
+CELL_W, CELL_H = SRC_W * SCALE, SRC_H * SCALE  # 16x32 output cells
 GRID_COLS, GRID_ROWS = 16, 16
-ATLAS_W = GRID_COLS * CELL_W   # 128
-ATLAS_H = GRID_ROWS * CELL_H   # 256
+ATLAS_W = GRID_COLS * CELL_W   # 256
+ATLAS_H = GRID_ROWS * CELL_H   # 512
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -425,27 +428,33 @@ def build_custom_icons():
 # ---------------------------------------------------------------------------
 
 def render_glyph(atlas, glyph_rows, col, row):
-    """Stamp an 8x16 bitmap glyph into the atlas at grid position (col, row)."""
+    """Stamp an 8x16 bitmap glyph into the atlas at grid (col, row), upscaled 2x."""
     x0 = col * CELL_W
     y0 = row * CELL_H
     for y, byte_val in enumerate(glyph_rows):
-        for x in range(8):
+        for x in range(SRC_W):
             if byte_val & (0x80 >> x):
-                atlas.putpixel((x0 + x, y0 + y), (255, 255, 255, 255))
+                for dy in range(SCALE):
+                    for dx in range(SCALE):
+                        atlas.putpixel((x0 + x * SCALE + dx, y0 + y * SCALE + dy),
+                                       (255, 255, 255, 255))
 
 
 def render_inverted_glyph(atlas, glyph_rows, col, row):
-    """Stamp an inverted 8x16 glyph (white bg, black fg) at grid (col, row)."""
+    """Stamp an inverted 8x16 glyph at grid (col, row), upscaled 2x."""
     x0 = col * CELL_W
     y0 = row * CELL_H
     for y, byte_val in enumerate(glyph_rows):
-        for x in range(8):
+        for x in range(SRC_W):
             if byte_val & (0x80 >> x):
-                # Foreground pixel → transparent (black)
-                atlas.putpixel((x0 + x, y0 + y), (0, 0, 0, 0))
+                # Foreground pixel → transparent (black) — already default
+                pass
             else:
                 # Background pixel → lit (white)
-                atlas.putpixel((x0 + x, y0 + y), (255, 255, 255, 255))
+                for dy in range(SCALE):
+                    for dx in range(SCALE):
+                        atlas.putpixel((x0 + x * SCALE + dx, y0 + y * SCALE + dy),
+                                       (255, 255, 255, 255))
 
 
 def main():

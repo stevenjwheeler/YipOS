@@ -14,41 +14,50 @@ CalibrateScreen::CalibrateScreen(PDAController& pda) : Screen(pda) {
     macro_index = -1; // no macro — pure text
 }
 
-void CalibrateScreen::Render() {
+void CalibrateScreen::RenderGlyphPage() {
     auto& d = display_;
+    int bank = page_;
 
-    // No frame — maximize usable area for the ruler.
-    // Every row shows a column ruler so contacts on any row
-    // can be read. Alternating tens/units on adjacent rows.
-    //
-    // Row 0: tens   (zone row 1 = display row 1 is one below)
-    // Row 1: units  ← touch zone row 1
-    // Row 2: tens
-    // Row 3: units
-    // Row 4: tens   ← touch zone row 2
-    // Row 5: units
-    // Row 6: tens   ← touch zone row 3
-    // Row 7: units
+    // Row 0: header
+    if (bank == 0) {
+        d.WriteText(1, 0, "BANK 0  Standard ROM  0-255");
+    } else {
+        d.WriteText(1, 0, "BANK 1  Extended ROM  0-238");
+    }
 
-    for (int row = 0; row < ROWS; row++) {
-        bool show_tens = (row % 2 == 0);
-        for (int c = 0; c < COLS; c++) {
-            char ch;
-            if (show_tens) {
-                ch = '0' + (c / 10);
+    // Page indicator (inverted, touchable)
+    char prev_ch = '<';
+    char next_ch = '>';
+    d.WriteChar(0, 0, static_cast<int>(prev_ch) + INVERT_OFFSET);
+    d.WriteChar(COLS - 1, 0, static_cast<int>(next_ch) + INVERT_OFFSET);
+
+    // Rows 1-7: glyphs, 40 per row
+    int max_glyph = (bank == 0) ? 255 : 238;
+    int idx = 0;
+    for (int row = 1; row < ROWS; row++) {
+        for (int col = 0; col < COLS; col++) {
+            if (idx <= max_glyph) {
+                d.WriteChar(col, row, idx, bank);
             } else {
-                ch = '0' + (c % 10);
+                d.WriteChar(col, row, 32, 0); // space (bank 0)
             }
-            d.WriteChar(c, row, static_cast<int>(ch));
+            idx++;
         }
     }
+}
+
+void CalibrateScreen::Render() {
+    RenderGlyphPage();
 }
 
 void CalibrateScreen::RenderContent() {}
 
 bool CalibrateScreen::OnInput(const std::string& key) {
-    // Just log — do NOT overwrite the ruler grid
     Logger::Info("CLBR touch: " + key);
+
+    // Any touch toggles between bank 0 and bank 1
+    page_ = (page_ + 1) % 2;
+    pda_.StartRender(this);
     return true;
 }
 

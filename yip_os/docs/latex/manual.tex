@@ -346,7 +346,7 @@ Via the combination of these two prefabs, you can easily have a real computer on
 Unzip your Yip-Boi \texttt{.zip} file and drag the \texttt{.unitypackage} into your Unity project. FBM recommends creating a backup with ALCOM or VCC.
 
 \begin{warnbox}[NOTE]
-The Williams Tube rendering method requires \textbf{27 bits of parameter space}. This is fairly heavy for an asset, and you may want to make a version of your avatar that sacrifices some of your other heavy assets.
+The Williams Tube rendering method requires \textbf{28 bits of parameter space}. This is fairly heavy for an asset, and you may want to make a version of your avatar that sacrifices some of your other heavy assets.
 \end{warnbox}
 
 \begin{enumerate}[leftmargin=2em]
@@ -627,7 +627,7 @@ Yip OS boots into the Home screen after displaying a brief boot graphic. The Hom
   \toprule
   & \textbf{Col 1} & \textbf{Col 2} & \textbf{Col 3} & \textbf{Col 4} & \textbf{Col 5} \\
   \midrule
-  \textbf{Row 1} & DBG & ----- & ----- & ----- & ----- \\[0.3em]
+  \textbf{Row 1} & DBG & ----- & INTRP & ----- & ----- \\[0.3em]
   \textbf{Row 2} & ----- & ----- & ----- & ----- & ----- \\
   \textbf{Row 3} & ----- & ----- & ----- & ----- & ----- \\
   \bottomrule
@@ -657,7 +657,7 @@ From any program, press \key{BACK} to return to the previous screen. Press it re
 \section{PROGRAMS}
 \label{sec:programs}
 
-By default, Yip OS v1.0 comes with the following programs:
+By default, Yip OS comes with the following programs:
 
 \subsection{STATS --- System Monitor}
 \label{sec:stats}
@@ -768,7 +768,7 @@ The VRCX hub provides access to three sub-screens:
 \manualfig[0.55\textwidth]{VRCX_WORLDS.png}{VRCX recent worlds list.}
 
 \begin{notebox}
-Yip OS can only display standard ASCII characters. Friend names or world names containing special or Unicode characters will appear garbled on the display.
+Most programs display standard ASCII characters only. Friend names or world names containing special or Unicode characters will appear garbled on the display. The INTRP interpreter program supports accented Latin and Japanese kana via the extended ROM (see Section~\ref{sec:intrp}).
 \end{notebox}
 
 \textbf{Notifications} --- Displays your pending VRCX notifications (friend requests, invites, etc.).
@@ -797,7 +797,7 @@ At \textbf{ULTRA write speed}, the display is split into two zones:
 
 The transcription model runs entirely on your local machine --- no audio is sent to external servers. Inference uses \textbf{Vulkan GPU acceleration} on NVIDIA and AMD GPUs, with automatic CPU fallback if no compatible GPU is available. On Linux, audio capture uses \textbf{PulseAudio}.
 
-Due to the CRT's ASCII-only character set, all transcription output is \textbf{automatically translated to English}. Non-English speech is translated in real time; English speech passes through unchanged. This means CC functions as both a captioning and a live translation tool.
+Due to the CRT's standard ASCII character set, all transcription output is \textbf{automatically translated to English}. Non-English speech is translated in real time; English speech passes through unchanged. This means CC functions as both a captioning and a live translation tool. For full bilingual translation with accented characters and Japanese kana support, see the \textbf{INTRP} interpreter program (Section~\ref{sec:intrp}).
 
 \subsubsection{Model Installation}
 
@@ -834,6 +834,140 @@ Log files are stored in the \texttt{logs} directory alongside \texttt{models}:
 \end{notebox}
 
 \newpage
+\subsection{INTRP --- Interpreter}
+\label{sec:intrp}
+
+A real-time bilingual interpreter that enables two people speaking different languages to communicate face-to-face. INTRP captures \textbf{two audio streams simultaneously} --- your microphone and system audio loopback (the other person's voice) --- runs speech-to-text on both, and translates each direction using a fully offline neural machine translation model.
+
+\manualfig[0.55\textwidth]{INTRP.png}{The INTRP program showing a live bilingual conversation. Top half: their speech translated into your language. Bottom half: your speech translated into their language.}
+
+The display is split into two zones:
+
+\begin{itemize}[leftmargin=2em, nosep]
+  \item \textbf{Rows 1--3} (top half): The other person's speech, captured via system audio loopback, translated into your language.
+  \item \textbf{Rows 5--6} (bottom half): Your speech, captured via microphone, translated into their language.
+\end{itemize}
+
+\noindent The header row shows the current language pair (e.g., ``EN>ES''). A \textbf{CONF} button (inverted, touchable) on the bottom-right opens the INTRP configuration screen.
+
+\subsubsection{Prerequisites}
+
+Before using INTRP, you should have the \textbf{CC} (Closed Captions) program working first (see Section~\ref{sec:cc}). INTRP uses the same Whisper speech-to-text engine, and getting CC working ensures your audio capture and Whisper model are correctly configured.
+
+\subsubsection{Translation Model (NLLB)}
+
+INTRP uses Meta's \textbf{NLLB-200} (No Language Left Behind) model, converted to \textbf{CTranslate2} format for efficient CPU and GPU inference. Two model sizes are available:
+
+\begin{center}
+{\small
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Model} & \textbf{Size} & \textbf{Notes} \\
+  \midrule
+  nllb-200-distilled-600M-ct2-int8 & $\sim$600\,MB & Faster, lower memory \\
+  nllb-200-distilled-1.3B-ct2-int8 & $\sim$1.3\,GB & Higher quality \\
+  \bottomrule
+\end{tabular}
+}
+\end{center}
+
+\noindent Download a pre-converted model from Hugging Face:
+
+\begin{quote}
+\url{https://huggingface.co/JustFrederik/nllb-200-distilled-600M-ct2-int8}\\
+\url{https://huggingface.co/JustFrederik/nllb-200-distilled-1.3B-ct2-int8}
+\end{quote}
+
+\noindent Clone or download the model directory and place it in the \texttt{models} directory:
+
+\begin{center}
+{\small
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Platform} & \textbf{Path} \\
+  \midrule
+  Windows & \texttt{\%APPDATA\%\textbackslash yip\_os\textbackslash models\textbackslash nllb\textbackslash} \\
+  Linux & \texttt{\~{}/.config/yip\_os/models/nllb/} \\
+  \bottomrule
+\end{tabular}
+}
+\end{center}
+
+\noindent The model directory should contain \texttt{model.bin}, \texttt{shared\_vocabulary.json}, and related files. A quick setup using Git:
+
+\begin{screenbox}
+\begin{verbatim}
+cd ~/.config/yip_os/models/
+git clone https://huggingface.co/JustFrederik/\
+    nllb-200-distilled-600M-ct2-int8 nllb
+\end{verbatim}
+\end{screenbox}
+
+\subsubsection{GPU Acceleration}
+
+Translation inference runs on \textbf{CUDA} when available, with automatic \textbf{CPU fallback}. CUDA acceleration requires:
+
+\begin{itemize}[leftmargin=2em, nosep]
+  \item An NVIDIA GPU with CUDA support
+  \item \textbf{CUDA 12.5} or later installed on your system
+  \item The CTranslate2 library built with CUDA support
+\end{itemize}
+
+\noindent On CPU, translation takes approximately 2--5 seconds per sentence depending on length and model size. With CUDA, this drops to under 1 second. The INTRP tab in the desktop app shows the current inference device (``CUDA'' or ``CPU'') in the status line.
+
+\subsubsection{Audio Device Selection}
+
+INTRP requires \textbf{two audio devices}:
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[Microphone] Captures your speech. Select your headset or desktop microphone.
+  \item[System Loopback] Captures the other person's speech from your system audio output. On Windows, select a loopback/monitor device (e.g., ``WASAPI Loopback''). On Linux with PulseAudio/PipeWire, select a monitor source.
+\end{description}
+
+\noindent Both devices are configured in the \textbf{INTRP tab} of the desktop companion app.
+
+\subsubsection{INTRP Configuration Screen}
+
+Tap the \textbf{CONF} button on the INTRP display to open the configuration screen. This screen lets you set:
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[I SPEAK] Your language (tap to select from the language list).
+  \item[THEY SPEAK] The other person's language (tap to select).
+\end{description}
+
+\noindent Supported languages: English, Espa\~{n}ol, Fran\c{c}ais, Deutsch, Italiano, Portugu\^{e}s, and Japanese (日本語). Language selections persist to NVRAM.
+
+\subsubsection{Desktop Companion --- INTRP Tab}
+
+The INTRP tab in the desktop companion app provides full configuration:
+
+\manualfig[0.55\textwidth]{INTRP YipOS.png}{The INTRP configuration tab in the Yip OS desktop companion app.}
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[Languages] Dropdown selectors for ``I speak'' and ``They speak''.
+  \item[Whisper Model] Select the speech-to-text model (same models as CC).
+  \item[Mic Device] Audio input device for your speech.
+  \item[Loopback Device] Audio input device for capturing their speech.
+  \item[NLLB Model] Path to the CTranslate2-format NLLB model directory.
+  \item[Status] Shows the current state of both Whisper instances and the NLLB translation engine, including the inference device (CUDA or CPU).
+\end{description}
+
+\subsubsection{Extended Character ROM (Bank 1)}
+
+INTRP uses a \textbf{banked character ROM} to display accented Latin characters (for European languages) and Japanese kana. When the translation output contains characters outside the standard ASCII range, INTRP automatically switches between ROM banks:
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[Bank 0] Standard 256-glyph ROM (ASCII, box-drawing, icons). See Section~\ref{sec:charset}.
+  \item[Bank 1] Extended ROM with accented Latin, hiragana, katakana, and Japanese punctuation. See Section~\ref{sec:extrom}.
+\end{description}
+
+\noindent Bank switching is handled automatically and adds \textbf{1 synced bit} (\texttt{WT\_Bank}) to the avatar's parameter space. The v1.1 Unity setup script configures this automatically.
+
+\begin{notebox}
+Japanese output from the NLLB model is post-processed through \textbf{MeCab} to convert kanji to hiragana readings, since the extended ROM contains kana but not kanji. If MeCab is unavailable, kanji characters display as ``?''.
+\end{notebox}
+
+\newpage
 \subsection{AVTR --- Avatar Manager}
 \label{sec:avtr}
 
@@ -848,7 +982,7 @@ The AVTR hub provides two functions:
 \manualfig[0.55\textwidth]{AVTR_CHANGE.png}{Avatar selection list. Use \key{JOYSTICK} to cycle, \key{SEL} to view details.}
 
 \begin{notebox}
-Yip OS can only display standard ASCII characters. Avatar names containing special or Unicode characters (e.g., Japanese, emoji, accented letters) will appear garbled on the display.
+Most programs display standard ASCII characters only. Avatar names containing special or Unicode characters (e.g., Japanese, emoji, accented letters) will appear garbled on the display.
 \end{notebox}
 
 \manualfig[0.55\textwidth]{AVTR_DETAIL.png}{Avatar detail view --- press \key{SEL} to switch to this avatar.}
@@ -1049,7 +1183,7 @@ If you wish to make the device \textbf{only locally interactive} (preventing oth
 \section{THE CHARACTER ROM}
 \label{sec:charset}
 
-The Yip-Boi's display is driven by a \textbf{256-glyph Character ROM}, supplied on the included 3.5'' floppy disk. Every character, icon, box-drawing element, and inverted variant is stored in a single 16$\times$16 atlas grid.
+The Yip-Boi's display is driven by a \textbf{256-glyph Character ROM} (Bank 0), supplied on the included 3.5'' floppy disk. Every character, icon, box-drawing element, and inverted variant is stored in a single 16$\times$16 atlas grid. An \textbf{Extended ROM} (Bank 1) provides additional characters for multilingual support --- see Section~\ref{sec:extrom}.
 
 \begin{figure}[H]
   \centering
@@ -1074,6 +1208,40 @@ The Yip-Boi's display is driven by a \textbf{256-glyph Character ROM}, supplied 
 \end{tabular}
 }
 \end{center}
+
+\subsection{Extended Character ROM (Bank 1)}
+\label{sec:extrom}
+
+Yip OS v1.1 introduces a second \textbf{extended Character ROM} (Bank 1) that provides accented Latin characters for European languages and Japanese kana for the INTRP interpreter program (see Section~\ref{sec:intrp}).
+
+\begin{figure}[H]
+  \centering
+  \fcolorbox{darkgreen}{screenbg}{%
+    \includegraphics[width=0.3\textwidth]{WilliamsTube_PDARom_Ext.png}%
+  }
+  \par\vspace{0.3em}
+  {\footnotesize\ttfamily The Extended Character ROM atlas (Bank 1, 16$\times$16 grid).}
+\end{figure}
+
+\begin{center}
+{\small
+\begin{tabular}{ccl}
+  \toprule
+  \textbf{Index Range} & \textbf{Count} & \textbf{Contents} \\
+  \midrule
+  0--31 & 32 & Accented Latin lowercase (\`{a}\'{a}\^{a}\~{a} etc.) \\
+  32--61 & 30 & Accented Latin uppercase (\`{A}\'{A}\^{A}\~{A} etc.) \\
+  62--65 & 4 & Extra Latin (\oe, \OE, \textquestiondown, \textexclamdown) \\
+  66--148 & 83 & Hiragana \\
+  149--231 & 83 & Katakana \\
+  232--238 & 7 & Japanese punctuation \\
+  239--255 & 17 & Reserved \\
+  \bottomrule
+\end{tabular}
+}
+\end{center}
+
+Bank switching is controlled by the \texttt{WT\_Bank} synced Bool parameter. Programs that output multilingual text (such as INTRP) automatically switch banks as needed during display writes. Both ROM atlases are generated by Python scripts included in the source repository.
 
 % ============================================================================
 % FREQUENTLY ASKED QUESTIONS
@@ -1153,9 +1321,10 @@ To combat this, \textbf{VRCX and AVTR are disabled by default} and require you t
   WT\_CharLo & Int & 8 & Glyph index (0--255) \\
   WT\_ScaleA & Bool & 1 & Mode bit A \\
   WT\_ScaleB & Bool & 1 & Mode bit B \\
+  WT\_Bank & Bool & 1 & ROM bank select (0=standard, 1=extended) \\
   PDA Enable & Bool & 1 & Enable/disable PDA \& Williams Tube \\
   \midrule
-  \textbf{Total} & & \textbf{27} & \\
+  \textbf{Total} & & \textbf{28} & \\
   \bottomrule
 \end{tabular}
 }
@@ -1226,6 +1395,9 @@ The companion application builds and runs natively on Linux. Audio capture (for 
 \begin{itemize}[leftmargin=2em, nosep]
   \item OpenGL, libcurl, PulseAudio, and Vulkan development headers
   \item \texttt{glslc} (Vulkan shader compiler)
+  \item CTranslate2 (for INTRP translation --- optional, see Section~\ref{sec:intrp})
+  \item CUDA $\geq$ 12.5 (for GPU-accelerated translation --- optional, falls back to CPU)
+  \item MeCab and dictionary (for Japanese kanji$\rightarrow$kana conversion --- optional)
 \end{itemize}
 
 \noindent See the project README for distribution-specific package names.
@@ -1318,8 +1490,11 @@ The Williams Tube camera lives on the \textbf{UiMenu} layer, out of necessity, a
 \label{sec:glossary}
 
 \begin{description}[style=nextline, leftmargin=1em, font=\ttfamily\bfseries]
+  \item[Bank Switching]
+    The process of toggling between ROM Bank 0 (standard ASCII) and Bank 1 (extended characters) during display writes. Controlled by the \texttt{WT\_Bank} synced parameter.
+
   \item[Character ROM]
-    The 256-glyph font atlas supplied on 3.5'' floppy. Defines every displayable character and icon.
+    The 256-glyph font atlas supplied on 3.5'' floppy. Defines every displayable character and icon. Bank 0 is the standard ROM; Bank 1 is the extended ROM with accented Latin and Japanese kana.
 
   \item[CRT]
     Cathode Ray Tube. The display technology being lovingly emulated.
@@ -1332,6 +1507,9 @@ The Williams Tube camera lives on the \textbf{UiMenu} layer, out of necessity, a
 
   \item[Macro Glyph]
     A pre-rendered full-screen image stamped in one write cycle. The secret to fast screen transitions.
+
+  \item[NLLB]
+    No Language Left Behind. Meta's multilingual neural machine translation model used by the INTRP interpreter for offline translation.
 
   \item[NVRAM]
     Non-volatile RAM. Stores configuration and selections between power cycles. Clearable via CONF.

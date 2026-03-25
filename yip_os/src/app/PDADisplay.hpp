@@ -25,7 +25,7 @@ public:
     void MoveCursor(int col, float row);
 
     // Character writes
-    void WriteChar(int col, float row, int char_idx);
+    void WriteChar(int col, float row, int char_idx, int bank = 0);
     void WriteText(int col, float row, const std::string& text, bool inverted = false);
     void WriteGlyph(int col, float row, int glyph_idx);
     void WriteBox(int col, int row, int w, int h);
@@ -76,7 +76,7 @@ private:
     void SendParam(const std::string& name, float value);
     void SendParam(const std::string& name, int value);
     void SendParam(const std::string& name, bool value);
-    void SendWrite(int col, float row, int char_idx, bool sleep = true);
+    void SendWrite(int col, float row, int char_idx, int bank = 0, bool sleep = true);
 
     OSCManager& osc_;
     ScreenBuffer& screen_;
@@ -91,8 +91,10 @@ private:
     int last_char_idx_ = 0;
     int total_writes_ = 0;
 
-    // Buffered write queue: (col, row_float, char_idx)
-    std::vector<std::tuple<int, float, int>> write_queue_;
+    int current_bank_ = 0;  // Current ROM bank (0=standard, 1=extended)
+
+    // Buffered write queue: (col, row_float, char_idx, bank)
+    std::vector<std::tuple<int, float, int, int>> write_queue_;
     bool buffered_ = false;
     int priority_insert_pos_ = -1; // >=0 means priority mode active
     std::chrono::steady_clock::time_point last_write_time_{};

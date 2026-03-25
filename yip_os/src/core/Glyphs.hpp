@@ -109,5 +109,98 @@ constexpr uint8_t G_LOWER_SHADE = 146; // ▄ dithered (50%)
 // Boot macro glyph index
 constexpr int BOOT_MACRO_INDEX = 5;
 
+// --- Extended ROM (Bank 1) ---
+// Bank 1 atlas layout:
+//   0-31:    Accented Latin lowercase (àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþßÿ)
+//   32-61:   Accented Latin uppercase (ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ)
+//   62-65:   Extra Latin (œŒ¿¡)
+//   66-148:  Hiragana (ぁ-ん, U+3041-U+3093)
+//   149-231: Katakana (ァ-ン, U+30A1-U+30F3)
+//   232-238: Japanese punctuation (。、「」・ー～)
+//   239-255: Reserved
+
+struct BankedGlyph {
+    int bank;   // 0 = standard ROM, 1 = extended ROM
+    int index;  // glyph index within that bank (0-255)
+};
+
+// Decode one UTF-8 codepoint from a string, advancing pos.
+// Returns the Unicode codepoint, or 0xFFFD on invalid input.
+inline uint32_t DecodeUTF8(const std::string& s, size_t& pos) {
+    if (pos >= s.size()) return 0xFFFD;
+    uint8_t c = static_cast<uint8_t>(s[pos]);
+    uint32_t cp;
+    int extra;
+    if (c < 0x80) { cp = c; extra = 0; }
+    else if ((c & 0xE0) == 0xC0) { cp = c & 0x1F; extra = 1; }
+    else if ((c & 0xF0) == 0xE0) { cp = c & 0x0F; extra = 2; }
+    else if ((c & 0xF8) == 0xF0) { cp = c & 0x07; extra = 3; }
+    else { pos++; return 0xFFFD; }
+    pos++;
+    for (int i = 0; i < extra; i++) {
+        if (pos >= s.size() || (static_cast<uint8_t>(s[pos]) & 0xC0) != 0x80) return 0xFFFD;
+        cp = (cp << 6) | (static_cast<uint8_t>(s[pos]) & 0x3F);
+        pos++;
+    }
+    return cp;
+}
+
+// Map a Unicode codepoint to a (bank, index) pair for display.
+// Bank 0 = standard ROM (ASCII 32-127, UI primitives 0-31, icons 128-159, inverted 160-255).
+// Bank 1 = extended ROM (accented Latin, hiragana, katakana, JP punctuation).
+// Unmapped codepoints return bank 0 index 32 (space).
+inline BankedGlyph MapCodepoint(uint32_t cp) {
+    // Bank 0: ASCII (direct mapping)
+    if (cp >= 32 && cp <= 126) return {0, static_cast<int>(cp)};
+
+    // Bank 1: Accented Latin lowercase — indices 0-29
+    // U+00E0-U+00F6 (skip ÷ U+00F7), U+00F8-U+00FE
+    if (cp >= 0xE0 && cp <= 0xFE && cp != 0xF7) {
+        int idx = static_cast<int>(cp - 0xE0);
+        if (cp > 0xF7) idx--;  // compensate for skipped ÷
+        return {1, idx};
+    }
+    if (cp == 0xDF) return {1, 30};  // ß
+    if (cp == 0xFF) return {1, 31};  // ÿ
+
+    // Bank 1: Accented Latin uppercase — indices 32-61
+    // U+00C0-U+00D6 (skip × U+00D7), U+00D8-U+00DE
+    if (cp >= 0xC0 && cp <= 0xDE && cp != 0xD7) {
+        int idx = 32 + static_cast<int>(cp - 0xC0);
+        if (cp > 0xD7) idx--;  // compensate for skipped ×
+        return {1, idx};
+    }
+
+    // Bank 1: Extra Latin — indices 62-65
+    if (cp == 0x0153) return {1, 62};  // œ
+    if (cp == 0x0152) return {1, 63};  // Œ
+    if (cp == 0x00BF) return {1, 64};  // ¿
+    if (cp == 0x00A1) return {1, 65};  // ¡
+
+    // Bank 1: Hiragana — indices 66-148 (U+3041-U+3093, 83 codepoints)
+    if (cp >= 0x3041 && cp <= 0x3093) {
+        return {1, 66 + static_cast<int>(cp - 0x3041)};
+    }
+
+    // Bank 1: Katakana — indices 149-231 (U+30A1-U+30F3, 83 codepoints)
+    if (cp >= 0x30A1 && cp <= 0x30F3) {
+        return {1, 149 + static_cast<int>(cp - 0x30A1)};
+    }
+
+    // Bank 1: Japanese punctuation — indices 232-238
+    switch (cp) {
+        case 0x3002: return {1, 232};  // 。
+        case 0x3001: return {1, 233};  // 、
+        case 0x300C: return {1, 234};  // 「
+        case 0x300D: return {1, 235};  // 」
+        case 0x30FB: return {1, 236};  // ・
+        case 0x30FC: return {1, 237};  // ー
+        case 0xFF5E: return {1, 238};  // ～ (fullwidth tilde)
+    }
+
+    // Fallback: space in bank 0
+    return {0, 32};
+}
+
 } // namespace Glyphs
 } // namespace YipOS

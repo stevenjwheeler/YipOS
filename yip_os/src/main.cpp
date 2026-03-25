@@ -103,6 +103,7 @@ int main(int argc, char* argv[]) {
             osc_query->AddParameter("/avatar/parameters/WT_CharHi", "i", A::WriteOnly, 0);
             osc_query->AddParameter("/avatar/parameters/WT_ScaleA", "T", A::WriteOnly, false);
             osc_query->AddParameter("/avatar/parameters/WT_ScaleB", "T", A::WriteOnly, false);
+            osc_query->AddParameter("/avatar/parameters/WT_Bank",   "T", A::WriteOnly, false);
 
             // Register parameters we receive (read from our perspective)
             osc_query->AddParameter("/avatar/parameters/CRT_Wrist_TL", "f", A::ReadOnly, 0.0f);

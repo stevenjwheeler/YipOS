@@ -61,7 +61,12 @@ void PDADisplay::MoveCursor(int col, float row) {
     }
 }
 
-void PDADisplay::SendWrite(int col, float row, int char_idx, bool sleep) {
+void PDADisplay::SendWrite(int col, float row, int char_idx, int bank, bool sleep) {
+    // Switch ROM bank if needed
+    if (bank != current_bank_) {
+        SendParam("WT_Bank", bank > 0);
+        current_bank_ = bank;
+    }
     MoveCursor(col, row);
     SendParam("WT_CharLo", char_idx & 0xFF);
     SendParam("WT_CharHi", (char_idx >> 8) & 0xFF);
@@ -75,17 +80,17 @@ void PDADisplay::SendWrite(int col, float row, int char_idx, bool sleep) {
     screen_.Put(col, static_cast<int>(std::round(row)), ch);
 }
 
-void PDADisplay::WriteChar(int col, float row, int char_idx) {
+void PDADisplay::WriteChar(int col, float row, int char_idx, int bank) {
     if (buffered_) {
         if (priority_insert_pos_ >= 0) {
             write_queue_.insert(write_queue_.begin() + priority_insert_pos_,
-                                std::make_tuple(col, row, char_idx));
+                                std::make_tuple(col, row, char_idx, bank));
             priority_insert_pos_++;
         } else {
-            write_queue_.emplace_back(col, row, char_idx);
+            write_queue_.emplace_back(col, row, char_idx, bank);
         }
     } else {
-        SendWrite(col, row, char_idx, true); // immediate: sleep for write_delay
+        SendWrite(col, row, char_idx, bank, true); // immediate: sleep for write_delay
     }
 }
 
@@ -169,6 +174,11 @@ void PDADisplay::StampMacro(int macro_index) {
 
 void PDADisplay::ClearScreen() {
     Logger::Debug("Clearing screen");
+    // Reset to bank 0 before clearing
+    if (current_bank_ != 0) {
+        SendParam("WT_Bank", false);
+        current_bank_ = 0;
+    }
     SetClearMode();
     SendParam("WT_CursorX", 0.5f);
     SendParam("WT_CursorY", 0.5f);
@@ -199,9 +209,9 @@ bool PDADisplay::FlushOne() {
         return true; // still waiting — tell caller buffer is active but don't block
     }
 
-    auto [col, row, char_idx] = write_queue_.front();
+    auto [col, row, char_idx, bank] = write_queue_.front();
     write_queue_.erase(write_queue_.begin());
-    SendWrite(col, row, char_idx, false); // buffered: no sleep, timing handled by FlushOne
+    SendWrite(col, row, char_idx, bank, false); // buffered: no sleep, timing handled by FlushOne
     if (write_queue_.empty()) {
         buffered_ = false;
         return false;
@@ -238,7 +248,7 @@ void PDADisplay::EndPriority() {
     auto tail_end = write_queue_.end();
     write_queue_.erase(
         std::remove_if(tail_begin, tail_end,
-            [&](const std::tuple<int, float, int>& entry) {
+            [&](const std::tuple<int, float, int, int>& entry) {
                 int col = std::get<0>(entry);
                 float row = std::get<1>(entry);
                 for (int i = 0; i < pcount; i++) {

@@ -164,18 +164,40 @@ bool INTRPScreen::FilterText(const std::string& text) const {
     return false;
 }
 
+// Count display columns (characters) in a UTF-8 string
+static int Utf8DisplayLen(const std::string& s) {
+    int count = 0;
+    size_t pos = 0;
+    while (pos < s.size()) {
+        Glyphs::DecodeUTF8(s, pos);
+        count++;
+    }
+    return count;
+}
+
+// Advance through a UTF-8 string by N display characters, returning byte offset
+static size_t Utf8AdvanceN(const std::string& s, size_t start, int n) {
+    size_t pos = start;
+    for (int i = 0; i < n && pos < s.size(); i++) {
+        Glyphs::DecodeUTF8(s, pos);
+    }
+    return pos;
+}
+
 void INTRPScreen::WordWrap(const std::string& text, std::vector<std::string>& output) {
     size_t pos = 0;
     while (pos < text.size()) {
-        size_t remaining = text.size() - pos;
-        if (static_cast<int>(remaining) <= LINE_WIDTH) {
+        int remaining = Utf8DisplayLen(text.substr(pos));
+        if (remaining <= LINE_WIDTH) {
             output.push_back(text.substr(pos));
             break;
         }
-        size_t end = pos + LINE_WIDTH;
-        size_t break_at = text.rfind(' ', end);
+        // Find break point at LINE_WIDTH characters
+        size_t end_byte = Utf8AdvanceN(text, pos, LINE_WIDTH);
+        // Look for a space to break at (search backwards in the byte range)
+        size_t break_at = text.rfind(' ', end_byte);
         if (break_at == std::string::npos || break_at <= pos) {
-            break_at = end;
+            break_at = end_byte;
         }
         output.push_back(text.substr(pos, break_at - pos));
         pos = break_at;
@@ -332,10 +354,11 @@ void INTRPScreen::Update() {
         while (!pending_top_.empty() && written < LINES_PER_TICK) {
             const std::string& line = pending_top_.front();
             int col = LEFT_COL;
-            for (int i = 0; i < static_cast<int>(line.size()); i++) {
-                char ch = line[i];
-                int char_idx = (ch >= 32 && ch <= 126) ? static_cast<int>(ch) : 32;
-                display_.WriteChar(col++, top_cursor_, char_idx);
+            size_t pos = 0;
+            while (pos < line.size() && col <= RIGHT_COL) {
+                uint32_t cp = DecodeUTF8(line, pos);
+                auto [bank, glyph] = MapCodepoint(cp);
+                display_.WriteChar(col++, top_cursor_, glyph, bank);
             }
             while (col <= RIGHT_COL) {
                 display_.WriteChar(col++, top_cursor_, 32);
@@ -354,10 +377,11 @@ void INTRPScreen::Update() {
         while (!pending_bot_.empty() && written < LINES_PER_TICK) {
             const std::string& line = pending_bot_.front();
             int col = LEFT_COL;
-            for (int i = 0; i < static_cast<int>(line.size()); i++) {
-                char ch = line[i];
-                int char_idx = (ch >= 32 && ch <= 126) ? static_cast<int>(ch) : 32;
-                display_.WriteChar(col++, bot_cursor_, char_idx);
+            size_t pos = 0;
+            while (pos < line.size() && col <= RIGHT_COL) {
+                uint32_t cp = DecodeUTF8(line, pos);
+                auto [bank, glyph] = MapCodepoint(cp);
+                display_.WriteChar(col++, bot_cursor_, glyph, bank);
             }
             // Don't overwrite CONF button on row 6
             int right_limit = (bot_cursor_ == 6) ? RIGHT_COL - 4 : RIGHT_COL;
