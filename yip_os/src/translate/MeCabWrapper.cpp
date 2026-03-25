@@ -1,5 +1,6 @@
 #include "MeCabWrapper.hpp"
 #include "core/Logger.hpp"
+#include "core/PathUtils.hpp"
 
 #include <mecab.h>
 #include <cstring>
@@ -17,10 +18,34 @@ MeCabWrapper::~MeCabWrapper() {
 }
 
 bool MeCabWrapper::Init() {
+#ifdef _WIN32
+    // On Windows the ipadic dictionary and mecabrc are bundled next to the exe.
+    // MeCab requires an explicit -r <rcfile> -d <dicdir> on Windows — it cannot
+    // auto-discover mecabrc from the DLL/exe directory.
+    std::string exe_dir = GetExeDir();
+    std::string dic_dir = exe_dir + "\\mecab-dic\\ipadic";
+    std::string rc_file = exe_dir + "\\mecabrc";
+
+    namespace fs = std::filesystem;
+    if (!fs::exists(dic_dir + "\\sys.dic")) {
+        Logger::Warning("MeCab: sys.dic not found in " + dic_dir);
+        return false;
+    }
+    if (!fs::exists(rc_file)) {
+        Logger::Warning("MeCab: mecabrc not found at " + rc_file);
+        return false;
+    }
+
+    std::string arg = "-r " + rc_file + " -d " + dic_dir;
+    Logger::Info("MeCab: loading dictionary from " + dic_dir);
+    mecab_ = mecab_new2(arg.c_str());
+#else
     mecab_ = mecab_new2("");
+#endif
     if (!mecab_) {
-        Logger::Warning("MeCab: Failed to initialize — " +
-                        std::string(mecab_strerror(nullptr)));
+        const char* err = mecab_strerror(nullptr);
+        std::string err_str = (err && err[0]) ? err : "(no error message)";
+        Logger::Warning("MeCab: Failed to initialize: " + err_str);
         return false;
     }
     Logger::Info("MeCab: Initialized successfully");

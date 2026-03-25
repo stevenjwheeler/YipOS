@@ -4,12 +4,25 @@ cd "$(dirname "$0")"
 
 # CTranslate2 prefix (for NLLB translation support)
 # Override with: CT2_PREFIX=/path/to/ct2 ./build.sh configure
-CT2_PREFIX="${CT2_PREFIX:-/tmp/ct2_install}"
+# Priority: user-set CT2_PREFIX > CUDA build > CPU-only build > none
+
+if [ -z "$CT2_PREFIX" ]; then
+    if [ -d "/tmp/ct2_install/lib64/cmake/ctranslate2" ]; then
+        CT2_PREFIX="/tmp/ct2_install"
+    elif [ -d "/tmp/ct2_install_cpu/lib64/cmake/ctranslate2" ]; then
+        CT2_PREFIX="/tmp/ct2_install_cpu"
+    fi
+fi
 
 CMAKE_EXTRA=""
-if [ -d "$CT2_PREFIX/lib64/cmake/ctranslate2" ]; then
+if [ -n "$CT2_PREFIX" ] && [ -d "$CT2_PREFIX/lib64/cmake/ctranslate2" ]; then
     CMAKE_EXTRA="-DCMAKE_PREFIX_PATH=$CT2_PREFIX"
-    echo "CTranslate2 found at $CT2_PREFIX"
+    # Detect CUDA vs CPU-only
+    if ls "$CT2_PREFIX"/lib64/libcublas* &>/dev/null; then
+        echo "CTranslate2 found at $CT2_PREFIX (CUDA)"
+    else
+        echo "CTranslate2 found at $CT2_PREFIX (CPU-only)"
+    fi
 else
     echo "CTranslate2 not found — translation will be disabled"
 fi

@@ -7,8 +7,18 @@
 !include "WinVer.nsh"
 
 ; Define installer name and output file
+; Variants (pass on makensis command line):
+;   (default)        — CPU-only CT2, no CUDA libs        ~80 MB
+;   /DCUDA_LITE      — CUDA CT2, user supplies cuBLAS    ~80 MB
+;   /DCUDA_FULL      — CUDA CT2, cuBLAS bundled          ~700 MB
 Name "YipOS"
-OutFile "..\YipOS v1.1.0 Setup.exe"
+!ifdef CUDA_FULL
+    OutFile "..\YipOS v1.1.1 Setup (CUDA).exe"
+!else ifdef CUDA_LITE
+    OutFile "..\YipOS v1.1.1 Setup (CUDA Lite).exe"
+!else
+    OutFile "..\YipOS v1.1.1 Setup.exe"
+!endif
 
 ; Default installation directory
 InstallDir "$PROGRAMFILES\YipOS"
@@ -126,10 +136,21 @@ Section "Install"
     File /nonfatal "..\build_win\sentencepiece.dll"
     File /nonfatal "..\build_win\openblas.dll"
 
-    ; CUDA runtime DLLs (optional — present when CTranslate2 built with CUDA)
-    File /nonfatal "..\build_win\cublas64_12.dll"
-    File /nonfatal "..\build_win\cublasLt64_12.dll"
-    File /nonfatal "..\build_win\cudart64_12.dll"
+    ; CUDA runtime DLLs (only in CUDA Full variant — adds ~600 MB)
+    !ifdef CUDA_FULL
+        File /nonfatal "..\build_win\cublas64_12.dll"
+        File /nonfatal "..\build_win\cublasLt64_12.dll"
+        File /nonfatal "..\build_win\cudart64_12.dll"
+    !endif
+
+    ; MeCab DLL + config (optional — for Japanese kanji→hiragana)
+    File /nonfatal "..\build_win\libmecab.dll"
+    File /nonfatal "..\build_win\mecabrc"
+
+    ; MeCab ipadic dictionary (~12 MB — required for Japanese kanji→hiragana)
+    SetOutPath "$INSTDIR\mecab-dic\ipadic"
+    File /nonfatal "..\build_win\mecab-dic\ipadic\*.*"
+    SetOutPath "$INSTDIR"
 
     ; Assets
     SetOutPath "$INSTDIR\assets"
@@ -158,7 +179,7 @@ Section "Install"
     WriteRegStr HKLM "${UNINSTKEY}" "InstallLocation" "$INSTDIR"
     WriteRegStr HKLM "${UNINSTKEY}" "DisplayIcon" "$INSTDIR\yip_os.exe,0"
     WriteRegStr HKLM "${UNINSTKEY}" "Publisher" "Foxipso"
-    WriteRegStr HKLM "${UNINSTKEY}" "DisplayVersion" "1.1.0"
+    WriteRegStr HKLM "${UNINSTKEY}" "DisplayVersion" "1.1.1"
     WriteRegStr HKLM "${UNINSTKEY}" "URLInfoAbout" "https://foxipso.com"
 
     ; Get size of installation directory
@@ -178,6 +199,9 @@ Section "Uninstall"
     Delete "$INSTDIR\cublas64_12.dll"
     Delete "$INSTDIR\cublasLt64_12.dll"
     Delete "$INSTDIR\cudart64_12.dll"
+    Delete "$INSTDIR\libmecab.dll"
+    Delete "$INSTDIR\mecabrc"
+    RMDir /r "$INSTDIR\mecab-dic"
     Delete "$INSTDIR\assets\vq_codebook.npy"
     RMDir /r "$INSTDIR\assets\images"
     RMDir "$INSTDIR\assets"

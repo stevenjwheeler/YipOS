@@ -4,7 +4,26 @@
 #include <cstdlib>
 #include <filesystem>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#endif
+
 namespace YipOS {
+
+// Get the directory containing the running executable.
+inline std::string GetExeDir() {
+#ifdef _WIN32
+    char buf[MAX_PATH];
+    GetModuleFileNameA(NULL, buf, MAX_PATH);
+    std::string path(buf);
+    auto pos = path.find_last_of("\\/");
+    return (pos != std::string::npos) ? path.substr(0, pos) : ".";
+#else
+    return ".";
+#endif
+}
 
 inline std::string GetConfigDir() {
 #ifdef _WIN32
