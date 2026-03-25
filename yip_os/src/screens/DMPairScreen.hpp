@@ -24,6 +24,7 @@ public:
 private:
     void RenderContent();
     void StartQRRender();
+    void WriteCodeOverlay();
     void StartScanning();
     void StopScanning();
 
@@ -48,6 +49,8 @@ private:
     double last_poll_ = 0;
     float saved_write_delay_ = 0;
     bool qr_rendering_ = false;
+    double last_qr_refresh_ = 0;
+    bool qr_needs_text_overlay_ = false;
 
     // Scanner thread state
     std::unique_ptr<ScreenCapture> screen_capture_;
@@ -58,7 +61,8 @@ private:
 
     static constexpr double POLL_INTERVAL = 3.0;
     static constexpr double CODE_TTL = 300.0;
-    static constexpr double SCAN_INTERVAL = 2.0;  // seconds between captures
+    static constexpr double SCAN_INTERVAL = 2.0;   // seconds between captures
+    static constexpr double QR_REFRESH_INTERVAL = 5.0;  // re-send QR + code overlay
     static constexpr int QR_TEMPLATE_MACRO = 37;
 };
 

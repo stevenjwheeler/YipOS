@@ -47,10 +47,12 @@ void DMDetailScreen::Render() {
     name = peer_name_.empty() ? "DM" : peer_name_;
     ListScreen::Render();
     name = saved_name;
+    display_.WriteGlyph(0, 1, G_LEFT_A);
 }
 
 void DMDetailScreen::RenderDynamic() {
     ListScreen::RenderDynamic();
+    display_.WriteGlyph(0, 1, G_LEFT_A);
 }
 
 void DMDetailScreen::RenderRow(int i, bool selected) {
