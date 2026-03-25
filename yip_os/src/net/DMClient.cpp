@@ -280,6 +280,7 @@ bool DMClient::PairConfirm(const std::string& session_id) {
 
 bool DMClient::FetchMessages(const std::string& session_id, int64_t since) {
     std::string url = "/dm/messages?session_id=" + session_id +
+                      "&user_id=" + user_id_ +
                       "&since=" + std::to_string(since);
     std::string resp = Get(url);
     if (resp.empty()) return false;
