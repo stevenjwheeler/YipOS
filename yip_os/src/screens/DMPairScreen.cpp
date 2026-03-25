@@ -183,6 +183,8 @@ void DMPairScreen::StartScanning() {
     scanned_code_.clear();
 
     scan_thread_ = std::make_unique<std::thread>([this]() {
+        Logger::Info("DMPair: scan thread started");
+
         struct quirc* q = quirc_new();
         if (!q) {
             Logger::Warning("DMPair: quirc_new failed");
@@ -190,15 +192,23 @@ void DMPairScreen::StartScanning() {
             return;
         }
 
+        int scan_count = 0;
         while (scan_running_) {
             Screenshot shot;
             if (!screen_capture_->Capture(shot) || shot.width == 0) {
+                Logger::Debug("DMPair: capture failed or empty frame");
                 std::this_thread::sleep_for(
                     std::chrono::milliseconds(static_cast<int>(SCAN_INTERVAL * 1000)));
                 continue;
             }
 
+            scan_count++;
+            Logger::Debug("DMPair: captured frame " + std::to_string(scan_count) +
+                          " (" + std::to_string(shot.width) + "x" +
+                          std::to_string(shot.height) + ")");
+
             if (quirc_resize(q, shot.width, shot.height) < 0) {
+                Logger::Warning("DMPair: quirc_resize failed");
                 std::this_thread::sleep_for(
                     std::chrono::milliseconds(static_cast<int>(SCAN_INTERVAL * 1000)));
                 continue;
@@ -216,13 +226,17 @@ void DMPairScreen::StartScanning() {
 
             // Check decoded results
             int count = quirc_count(q);
+            if (count > 0)
+                Logger::Info("DMPair: quirc found " + std::to_string(count) + " QR candidate(s)");
             for (int i = 0; i < count; i++) {
                 struct quirc_code qc;
                 struct quirc_data qd;
                 quirc_extract(q, i, &qc);
-                if (quirc_decode(&qc, &qd) == QUIRC_SUCCESS) {
+                quirc_decode_error_t err = quirc_decode(&qc, &qd);
+                if (err == QUIRC_SUCCESS) {
                     std::string payload(reinterpret_cast<const char*>(qd.payload),
                                         qd.payload_len);
+                    Logger::Info("DMPair: decoded QR payload: \"" + payload + "\"");
                     // Check if it looks like a 6-digit pairing code
                     if (payload.size() == 6) {
                         bool all_digits = true;
@@ -238,6 +252,9 @@ void DMPairScreen::StartScanning() {
                             return;
                         }
                     }
+                } else {
+                    Logger::Debug("DMPair: quirc decode error: " +
+                                  std::string(quirc_strerror(err)));
                 }
             }
 
@@ -245,6 +262,7 @@ void DMPairScreen::StartScanning() {
                 std::chrono::milliseconds(static_cast<int>(SCAN_INTERVAL * 1000)));
         }
 
+        Logger::Info("DMPair: scan thread stopped");
         quirc_destroy(q);
     });
 }
