@@ -694,8 +694,27 @@ A real-time heartbeat monitor and graph via OSC. Uses the same oscilloscope swee
 
 \manualfig[0.55\textwidth]{HEART.png}{The HEART program displaying heartbeat data.}
 
+The HEART program listens for heart rate data on VRChat avatar parameters via OSC. It is compatible with popular HR apps including \textbf{VRCOSC}, \textbf{PulsoidToOSC}, and \textbf{HRtoVRChat\_OSC} out of the box. The following parameters are recognized:
+
+\begin{itemize}
+  \item \textbf{Integer parameters} (raw BPM, 0--255):
+  \begin{itemize}
+    \item \texttt{/avatar/parameters/HR}
+    \item \texttt{/avatar/parameters/Heartrate3}
+    \item \texttt{/avatar/parameters/HeartRateInt}
+  \end{itemize}
+  \item \textbf{Float parameters} (normalized $-1.0$ to $1.0$, mapped to 0--255 BPM):
+  \begin{itemize}
+    \item \texttt{/avatar/parameters/Heartrate}
+    \item \texttt{/avatar/parameters/HeartRateFloat}
+    \item \texttt{/avatar/parameters/FullHRPercent}
+  \end{itemize}
+\end{itemize}
+
+If no new heart rate data is received for 10 seconds, the reading is considered stale and the heart animation stops. The last known BPM and session statistics (high, low, average) are retained on screen.
+
 \begin{notebox}
-The Yip-Boi receives BPM data from an OSC-based heart rate monitor or other external source. You can test the display using the \textbf{Simulate OSC Input} feature in the desktop app's OSC tab, which sends a configurable heart rate value at 1~Hz.
+You can test the display without HR hardware using the \textbf{Simulate OSC Input} feature in the desktop app's OSC tab, which sends a configurable heart rate value at 1~Hz.
 \end{notebox}
 
 \newpage
