@@ -35,11 +35,13 @@ void DMScreen::RenderEmpty() {
 
 void DMScreen::Render() {
     ListScreen::Render();
+    display_.WriteGlyph(0, 1, G_LEFT_A);
     RenderPairButton();
 }
 
 void DMScreen::RenderDynamic() {
     ListScreen::RenderDynamic();
+    display_.WriteGlyph(0, 1, G_LEFT_A);
 }
 
 void DMScreen::RenderPairButton() {
@@ -141,8 +143,8 @@ bool DMScreen::OnInput(const std::string& key) {
     // Touch contact for PAIR button (bottom-left area = zone row 6, col range)
     // Contact 53 = TR button, but for PAIR we use a touch zone
     // Row 6 maps to ZONE_ROWS[2] = 6, leftmost tile center = TILE_CENTERS[0] = 4
-    if (key == "46") {
-        // BL contact — navigate to pairing screen
+    if (key == "13") {
+        // Contact 13 = col 1, row 3 (bottom-left) — navigate to pairing screen
         pda_.SetPendingNavigate("DM_PAIR");
         return true;
     }

@@ -22,7 +22,7 @@ static double MonotonicNow() {
 DMPairScreen::DMPairScreen(PDAController& pda) : Screen(pda) {
     name = "DM_PAIR";
     macro_index = -1;
-    handle_back = true;
+    handle_back = true;  // we handle TL ourselves in OnInput
     update_interval = 1.0f;
 }
 
@@ -38,6 +38,9 @@ DMPairScreen::~DMPairScreen() {
 void DMPairScreen::Render() {
     if (mode_ == Mode::RENDERING_QR) {
         StartQRRender();
+    } else if (mode_ == Mode::SHOW_CODE) {
+        // Don't do a full render — the QR is on screen.
+        // Update() manages the periodic QR + code overlay refresh.
     } else {
         RenderFrame("DM PAIR");
         RenderContent();
@@ -46,7 +49,7 @@ void DMPairScreen::Render() {
 }
 
 void DMPairScreen::RenderDynamic() {
-    if (mode_ == Mode::RENDERING_QR) return;
+    if (mode_ == Mode::RENDERING_QR || mode_ == Mode::SHOW_CODE) return;
     RenderContent();
     RenderClock();
     RenderCursor();
@@ -57,20 +60,23 @@ void DMPairScreen::RenderContent() {
 
     switch (mode_) {
     case Mode::CHOOSE:
-        d.WriteText(2, 2, "Pair with a friend");
+        d.WriteGlyph(0, 1, G_LEFT_A);
+        d.WriteText(2, 1, "Pair with a friend");
         {
+            // DIAL — contact 12 (col 4, row 5) → place at col 2, row 4
             std::string label = "DIAL";
             for (int i = 0; i < static_cast<int>(label.size()); i++)
                 d.WriteChar(2 + i, 4, static_cast<int>(label[i]) + INVERT_OFFSET);
+            d.WriteText(2, 5, "Show QR");
         }
-        d.WriteText(8, 4, "Show QR code");
         {
+            // SCAN — contact 52 (col 36, row 5) → place at col 34, row 4
             std::string label = "SCAN";
             for (int i = 0; i < static_cast<int>(label.size()); i++)
-                d.WriteChar(2 + i, 5, static_cast<int>(label[i]) + INVERT_OFFSET);
+                d.WriteChar(34 + i, 4, static_cast<int>(label[i]) + INVERT_OFFSET);
+            d.WriteText(33, 5, "Read QR");
         }
-        d.WriteText(8, 5, "Read QR code");
-        d.WriteText(2, 6, "JOIN via desktop UI");
+        d.WriteText(2, 6, "(Or use desktop UI)");
         break;
 
     case Mode::CREATING:
@@ -80,19 +86,8 @@ void DMPairScreen::RenderContent() {
     case Mode::RENDERING_QR:
         break;  // handled by StartQRRender
 
-    case Mode::SHOW_CODE: {
-        d.WriteText(2, 2, "Share this code:");
-        d.WriteText(2, 4, "Code: " + code_);
-        double remaining = code_expires_ - MonotonicNow();
-        if (remaining < 0) remaining = 0;
-        int mins = static_cast<int>(remaining) / 60;
-        int secs = static_cast<int>(remaining) % 60;
-        char timer[16];
-        std::snprintf(timer, sizeof(timer), "Expires %d:%02d", mins, secs);
-        d.WriteText(2, 5, timer);
-        d.WriteText(2, 6, "Waiting for peer...");
-        break;
-    }
+    case Mode::SHOW_CODE:
+        break;  // handled by WriteCodeOverlay on the QR screen
 
     case Mode::SCANNING:
         d.WriteText(2, 2, "Scanning for QR...");
@@ -169,8 +164,15 @@ void DMPairScreen::StartQRRender() {
     }
 
     qr_rendering_ = true;
+    skip_clock = true;
     Logger::Info("DMPair: QR render started (" +
                  std::to_string(modules.size()) + " data writes)");
+}
+
+void DMPairScreen::WriteCodeOverlay() {
+    // Write the 6-digit code at text row 7, col 14 (right after baked "Manual code:")
+    // This is called repeatedly so dropped OSC writes get retried
+    display_.WriteText(14, 7, code_);
 }
 
 void DMPairScreen::StartScanning() {
@@ -258,22 +260,25 @@ void DMPairScreen::StopScanning() {
 void DMPairScreen::Update() {
     auto& client = pda_.GetDMClient();
 
-    // Check if QR render is complete → switch to SHOW_CODE
+    // Check if QR render is complete → switch to text mode for code overlay
     if (mode_ == Mode::RENDERING_QR && qr_rendering_) {
         if (!display_.IsBuffered()) {
             qr_rendering_ = false;
             display_.SetWriteDelay(saved_write_delay_);
-            // Stay in bitmap mode showing the QR — switch to SHOW_CODE
-            // for status polling (but don't re-render the screen)
+            // Switch to text mode and write the code overlay immediately
+            // (the QR bitmap stays on the render texture)
+            display_.SetTextMode();
+            WriteCodeOverlay();
+            last_qr_refresh_ = MonotonicNow();
             mode_ = Mode::SHOW_CODE;
-            Logger::Info("DMPair: QR render complete, polling for peer");
+            Logger::Info("DMPair: QR render complete, code overlay written");
         }
     }
 
-    // Poll for peer join (initiator)
+    // Poll for peer join + refresh QR display
     if (mode_ == Mode::SHOW_CODE) {
         if (MonotonicNow() > code_expires_) {
-            display_.SetTextMode();
+            skip_clock = false;
             mode_ = Mode::FAILED;
             error_ = "Code expired";
             pda_.StartRender(this);
@@ -281,17 +286,47 @@ void DMPairScreen::Update() {
         }
 
         double now = MonotonicNow();
+
+        // Poll backend for peer join
         if (now - last_poll_ >= POLL_INTERVAL) {
             last_poll_ = now;
             std::string status, peer;
             if (client.PairStatus(session_id_, status, peer)) {
                 if (status == "joined" || status == "confirmed") {
                     peer_name_ = peer;
-                    display_.SetTextMode();
+                    skip_clock = false;
                     mode_ = Mode::JOINED;
                     pda_.StartRender(this);
+                    return;
                 }
             }
+        }
+
+        // After bitmap refresh completes, switch back to text mode for overlay
+        if (qr_needs_text_overlay_ && !display_.IsBuffered()) {
+            display_.SetTextMode();
+            WriteCodeOverlay();
+            qr_needs_text_overlay_ = false;
+        }
+
+        // Re-send QR data + code overlay when display is idle.
+        // This patches any dropped OSC writes without clearing the screen.
+        if (!qr_needs_text_overlay_ && !display_.IsBuffered() &&
+            now - last_qr_refresh_ >= QR_REFRESH_INTERVAL) {
+            last_qr_refresh_ = now;
+
+            // Re-send QR light modules in bitmap mode
+            display_.SetBitmapMode();
+            display_.BeginBuffered();
+            QRGen qr;
+            if (qr.Encode(code_)) {
+                for (auto& mod : qr.GetLightModules()) {
+                    display_.WriteChar(mod.col, mod.row, 255);  // VQ_WHITE
+                }
+            }
+
+            // After these writes flush, we'll switch to text and write the code
+            qr_needs_text_overlay_ = true;
         }
     }
 
@@ -357,9 +392,33 @@ void DMPairScreen::Update() {
 bool DMPairScreen::OnInput(const std::string& key) {
     auto& client = pda_.GetDMClient();
 
+    // Back button — handle in every mode
+    if (key == "TL") {
+        if (mode_ == Mode::RENDERING_QR || mode_ == Mode::SHOW_CODE) {
+            // Cancel QR render and return to CHOOSE
+            if (qr_rendering_) {
+                display_.CancelBuffered();
+                display_.SetWriteDelay(saved_write_delay_);
+                qr_rendering_ = false;
+            }
+            display_.SetTextMode();
+            skip_clock = false;
+            mode_ = Mode::CHOOSE;
+            pda_.StartRender(this);
+            return true;
+        }
+        if (mode_ == Mode::SCANNING) {
+            StopScanning();
+        }
+        // Pop screen — tell controller we're done handling back
+        skip_clock = false;
+        handle_back = false;
+        return false;  // controller will pop
+    }
+
     if (mode_ == Mode::CHOOSE) {
-        // DIAL touch (row 4) — create session + render QR
-        if (key == "41") {
+        // DIAL touch — contact 12 (col 1, row 2, near display row 4)
+        if (key == "12") {
             mode_ = Mode::CREATING;
             pda_.StartRender(this);
 
@@ -377,8 +436,8 @@ bool DMPairScreen::OnInput(const std::string& key) {
             pda_.StartRender(this);
             return true;
         }
-        // SCAN touch (row 5) — start screen capture scanning
-        if (key == "46") {
+        // SCAN touch — contact 52 (col 5, row 2, right side)
+        if (key == "52") {
             mode_ = Mode::SCANNING;
             StartScanning();
             pda_.StartRender(this);
@@ -387,8 +446,8 @@ bool DMPairScreen::OnInput(const std::string& key) {
     }
 
     if (mode_ == Mode::SCANNING) {
-        // STOP touch
-        if (key == "46" || key == "41") {
+        // STOP touch — either side
+        if (key == "12" || key == "52") {
             StopScanning();
             mode_ = Mode::CHOOSE;
             pda_.StartRender(this);
@@ -397,7 +456,8 @@ bool DMPairScreen::OnInput(const std::string& key) {
     }
 
     if (mode_ == Mode::JOINED) {
-        if (key == "41" || key == "53") {
+        // OK button at row 5 — contact 12 or TR confirm
+        if (key == "12" || key == "53") {
             if (client.PairConfirm(session_id_)) {
                 client.AddSession(session_id_, "", peer_name_);
                 pda_.SaveDMSessions();
@@ -412,7 +472,8 @@ bool DMPairScreen::OnInput(const std::string& key) {
     }
 
     if (mode_ == Mode::FAILED) {
-        if (key == "41" || key == "53") {
+        // RETRY button at row 5 — contact 12 or TR confirm
+        if (key == "12" || key == "53") {
             mode_ = Mode::CHOOSE;
             error_.clear();
             pda_.StartRender(this);
@@ -420,21 +481,9 @@ bool DMPairScreen::OnInput(const std::string& key) {
         }
     }
 
-    // While QR is rendering, consume input to prevent navigation
+    // While QR is rendering/showing, consume all input (TL handled above)
     if (mode_ == Mode::RENDERING_QR || mode_ == Mode::SHOW_CODE) {
-        if (key == "TL" || key == "ML") {
-            // Cancel QR render and go back
-            if (qr_rendering_) {
-                display_.CancelBuffered();
-                display_.SetWriteDelay(saved_write_delay_);
-                qr_rendering_ = false;
-            }
-            display_.SetTextMode();
-            mode_ = Mode::CHOOSE;
-            pda_.StartRender(this);
-            return true;
-        }
-        return true;  // consume all other input
+        return true;
     }
 
     return false;
