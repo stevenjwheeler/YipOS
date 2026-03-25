@@ -4,6 +4,11 @@
 #include <algorithm>
 #include <cstring>
 
+// Windows <windows.h> (pulled in by curl) #defines SendMessage → SendMessageA/W
+#ifdef SendMessage
+#undef SendMessage
+#endif
+
 namespace YipOS {
 
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {

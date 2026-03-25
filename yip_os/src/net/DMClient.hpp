@@ -4,6 +4,12 @@
 #include <vector>
 #include <cstdint>
 
+// Windows <windows.h> defines SendMessage as SendMessageA/W — undo it
+// so our DMClient::SendMessage method compiles cleanly.
+#ifdef SendMessage
+#undef SendMessage
+#endif
+
 typedef void CURL;
 
 namespace YipOS {

@@ -167,64 +167,59 @@ void UIManager::Render(PDAController& pda, Config& config, OSCManager& osc) {
                            | ImGuiWindowFlags_NoBringToFrontOnFocus;
     ImGui::Begin("YipOS Control Panel", nullptr, flags);
 
-    if (ImGui::BeginTabBar("MainTabs")) {
-        if (ImGui::BeginTabItem("Status")) {
-            RenderStatusTab(pda, osc);
-            ImGui::EndTabItem();
+    // Two-row tab buttons
+    {
+        static const char* tab_labels[] = {
+            "Status", "OSC", "Display", "VRCX", "CC", "INTRP", "Avatar",
+            "Text", "IMG", "Stocks", "Twitch", "DM", "NVRAM", "Log"
+        };
+        static constexpr int TAB_COUNT = 14;
+        static constexpr int ROW1_COUNT = 7;
+
+        ImGuiStyle& style = ImGui::GetStyle();
+        float avail_w = ImGui::GetContentRegionAvail().x;
+
+        // Draw one row of tab buttons, evenly spaced
+        auto DrawTabRow = [&](int start, int count) {
+            float btn_w = (avail_w - style.ItemSpacing.x * (count - 1)) / count;
+            for (int i = 0; i < count; i++) {
+                int idx = start + i;
+                if (i > 0) ImGui::SameLine();
+                bool selected = (active_tab_ == idx);
+                if (selected) {
+                    ImGui::PushStyleColor(ImGuiCol_Button, style.Colors[ImGuiCol_ButtonActive]);
+                }
+                if (ImGui::Button(tab_labels[idx], ImVec2(btn_w, 0))) {
+                    active_tab_ = idx;
+                }
+                if (selected) {
+                    ImGui::PopStyleColor();
+                }
+            }
+        };
+
+        DrawTabRow(0, ROW1_COUNT);
+        DrawTabRow(ROW1_COUNT, TAB_COUNT - ROW1_COUNT);
+
+        ImGui::Separator();
+
+        // Render selected tab content
+        switch (active_tab_) {
+        case 0:  RenderStatusTab(pda, osc); break;
+        case 1:  RenderOSCTab(pda, config, osc); break;
+        case 2:  RenderDisplayTab(pda, config); break;
+        case 3:  RenderVRCXTab(pda, config); break;
+        case 4:  RenderCCTab(pda, config); break;
+        case 5:  RenderINTRPTab(pda, config); break;
+        case 6:  RenderAvatarTab(pda, config); break;
+        case 7:  RenderTextTab(pda, config, osc); break;
+        case 8:  RenderIMGTab(pda, config); break;
+        case 9:  RenderStocksTab(pda, config); break;
+        case 10: RenderTwitchTab(pda, config); break;
+        case 11: RenderDMTab(pda, config); break;
+        case 12: RenderNVRAMTab(pda, config); break;
+        case 13: RenderLogTab(); break;
         }
-        if (ImGui::BeginTabItem("OSC")) {
-            RenderOSCTab(pda, config, osc);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Display")) {
-            RenderDisplayTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("VRCX")) {
-            RenderVRCXTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("CC")) {
-            RenderCCTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("INTRP")) {
-            RenderINTRPTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Avatar")) {
-            RenderAvatarTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Text")) {
-            RenderTextTab(pda, config, osc);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("IMG")) {
-            RenderIMGTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Stocks")) {
-            RenderStocksTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Twitch")) {
-            RenderTwitchTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("DM")) {
-            RenderDMTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("NVRAM")) {
-            RenderNVRAMTab(pda, config);
-            ImGui::EndTabItem();
-        }
-        if (ImGui::BeginTabItem("Log")) {
-            RenderLogTab();
-            ImGui::EndTabItem();
-        }
-        ImGui::EndTabBar();
     }
 
     ImGui::End();

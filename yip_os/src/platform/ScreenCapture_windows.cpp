@@ -100,13 +100,29 @@ private:
         }
 
         ComPtr<IDXGIDevice> dxgi_device;
-        device_.As(&dxgi_device);
+        hr = device_.As(&dxgi_device);
+        if (FAILED(hr) || !dxgi_device) {
+            Logger::Warning("ScreenCapture: QueryInterface for IDXGIDevice failed");
+            return false;
+        }
         ComPtr<IDXGIAdapter> adapter;
-        dxgi_device->GetAdapter(&adapter);
+        hr = dxgi_device->GetAdapter(&adapter);
+        if (FAILED(hr) || !adapter) {
+            Logger::Warning("ScreenCapture: GetAdapter failed");
+            return false;
+        }
         ComPtr<IDXGIOutput> output;
-        adapter->EnumOutputs(0, &output);
+        hr = adapter->EnumOutputs(0, &output);
+        if (FAILED(hr) || !output) {
+            Logger::Warning("ScreenCapture: EnumOutputs failed (no monitor on output 0?)");
+            return false;
+        }
         ComPtr<IDXGIOutput1> output1;
-        output.As(&output1);
+        hr = output.As(&output1);
+        if (FAILED(hr) || !output1) {
+            Logger::Warning("ScreenCapture: QueryInterface for IDXGIOutput1 failed");
+            return false;
+        }
 
         hr = output1->DuplicateOutput(device_.Get(), &dup_);
         if (FAILED(hr)) {

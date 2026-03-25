@@ -112,6 +112,9 @@ private:
     // File drop callback
     std::function<void(const std::string&)> drop_callback_;
 
+    // Active tab index for two-row tab buttons
+    int active_tab_ = 0;
+
     // Window size
     int initial_width_ = 720;
     int initial_height_ = 480;
