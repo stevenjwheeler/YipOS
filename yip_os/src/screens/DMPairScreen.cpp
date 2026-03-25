@@ -296,7 +296,16 @@ void DMPairScreen::Update() {
             last_poll_ = now;
             std::string status, peer;
             if (client.PairStatus(session_id_, status, peer)) {
-                if (status == "joined" || status == "confirmed") {
+                if (status == "confirmed") {
+                    // Both sides auto-confirmed on join
+                    peer_name_ = peer;
+                    skip_clock = false;
+                    client.AddSession(session_id_, "", peer);
+                    pda_.SaveDMSessions();
+                    mode_ = Mode::COMPLETE;
+                    RequestRender();
+                    return;
+                } else if (status == "joined") {
                     peer_name_ = peer;
                     skip_clock = false;
                     mode_ = Mode::JOINED;

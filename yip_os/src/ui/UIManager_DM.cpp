@@ -5,6 +5,7 @@
 #include "net/DMClient.hpp"
 
 #include <imgui.h>
+#include <chrono>
 #include <cstdio>
 #include <string>
 
@@ -71,11 +72,29 @@ void UIManager::RenderDMTab(PDAController& pda, Config& config) {
         }
     }
 
-    // Show active code
+    // Show active code + poll for joiner
     if (pair.state == PairState::WAITING) {
         ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f),
                            "Code: %s", pair.code.c_str());
         ImGui::TextDisabled("Share this code with your friend");
+
+        // Poll every 3s for peer join
+        static double last_pair_poll = 0;
+        double now = std::chrono::duration<double>(
+            std::chrono::steady_clock::now().time_since_epoch()).count();
+        if (now - last_pair_poll >= 3.0) {
+            last_pair_poll = now;
+            std::string status, peer;
+            if (client.PairStatus(pair.session_id, status, peer)) {
+                if (status == "confirmed" || status == "joined") {
+                    client.AddSession(pair.session_id, "", peer);
+                    pda.SaveDMSessions();
+                    pair.state = PairState::COMPLETE;
+                    pair.peer_name = peer;
+                    Logger::Info("DM pair completed via poll: " + peer);
+                }
+            }
+        }
     }
 
     ImGui::Spacing();

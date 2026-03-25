@@ -186,6 +186,7 @@ export default {
         session.joiner_id = user_id;
         session.joiner_name = display_name;
         session.joiner_confirmed = true;
+        session.creator_confirmed = true;  // auto-confirm both sides on join
 
         await KV.put(`dm:session:${pair.session_id}`, JSON.stringify(session), {
           expirationTtl: SESSION_TTL,
