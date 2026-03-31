@@ -15,6 +15,7 @@ public:
     float refresh_interval = 0.0f;
     float update_interval = 0.0f;
     bool skip_clock = false; // skip clock/cursor writes (for screens that own the full display)
+    bool suppress_autolock = false; // keep autolock timer from engaging on this screen
     bool handle_back = false; // screen handles TL (back) itself instead of auto-pop
 
     Screen(PDAController& pda);

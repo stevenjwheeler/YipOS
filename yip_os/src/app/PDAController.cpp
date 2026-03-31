@@ -393,14 +393,17 @@ void PDAController::UpdateClock() {
 
     // Autolock check — engage soft lock (overlay, not screen push)
     if (!locked_ && !soft_locked_ && !booting_) {
-        std::string autolock_str = config_.GetState("lock.autolock", "30");
-        int autolock_secs = std::stoi(autolock_str);
-        if (autolock_secs > 0 && last_activity_ > 0) {
-            double elapsed = MonotonicNow() - last_activity_;
-            if (elapsed >= autolock_secs) {
-                Logger::Info("Soft lock engaged after " + std::to_string(autolock_secs) + "s");
-                soft_locked_ = true;
-                soft_lock_sel_count_ = 0;
+        Screen* cur = GetCurrentScreen();
+        if (!cur || !cur->suppress_autolock) {
+            std::string autolock_str = config_.GetState("lock.autolock", "30");
+            int autolock_secs = std::stoi(autolock_str);
+            if (autolock_secs > 0 && last_activity_ > 0) {
+                double elapsed = MonotonicNow() - last_activity_;
+                if (elapsed >= autolock_secs) {
+                    Logger::Info("Soft lock engaged after " + std::to_string(autolock_secs) + "s");
+                    soft_locked_ = true;
+                    soft_lock_sel_count_ = 0;
+                }
             }
         }
     }

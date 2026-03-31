@@ -15,6 +15,7 @@ using namespace Glyphs;
 DMComposeScreen::DMComposeScreen(PDAController& pda) : Screen(pda) {
     name = "DM_COMPOSE";
     update_interval = 0.25f;
+    suppress_autolock = true;
 
     session_id_ = pda_.GetSelectedDMSession();
     auto* session = pda_.GetDMClient().GetSession(session_id_);
@@ -164,7 +165,17 @@ void DMComposeScreen::RenderDynamic() {
 }
 
 void DMComposeScreen::RedrawText() {
-    auto* whisper = pda_.GetWhisperWorker();
+    // Re-stamp the macro to clear the text area in one shot, then overlay
+    // only the committed text.  Much faster than writing 38 spaces per row.
+    display_.SetMacroMode();
+    display_.StampMacro(COMPOSE_MACRO);
+    display_.SetTextMode();
+
+    // Re-render dynamic parts that the macro doesn't contain
+    RenderDynamic();
+
+    // Re-apply the current STOP/GO label
+    UpdateButtonLabel();
 
     // Build committed lines
     std::vector<std::string> committed_lines;
@@ -172,64 +183,20 @@ void DMComposeScreen::RedrawText() {
         WordWrap(compose_buffer_, committed_lines);
     }
 
-    // Build tentative lines (inverted)
-    std::vector<std::string> tentative_lines;
-    if (!paused_ && whisper) {
-        std::string tent = whisper->GetTentative();
-        if (!tent.empty() && !FilterText(tent)) {
-            WordWrap(tent, tentative_lines);
-        }
-    }
-
     int total_rows = TEXT_LAST_ROW - TEXT_FIRST_ROW + 1; // 4 rows
-    int total_lines = static_cast<int>(committed_lines.size()) +
-                      static_cast<int>(tentative_lines.size());
 
     // Take the last N lines that fit
-    int skip = total_lines > total_rows ? total_lines - total_rows : 0;
+    int skip = static_cast<int>(committed_lines.size()) > total_rows
+                   ? static_cast<int>(committed_lines.size()) - total_rows
+                   : 0;
 
     int row = TEXT_FIRST_ROW;
-    int line_idx = 0;
-
-    // Write committed lines
-    for (int i = 0; i < static_cast<int>(committed_lines.size()); i++) {
-        if (line_idx < skip) { line_idx++; continue; }
+    for (int i = skip; i < static_cast<int>(committed_lines.size()); i++) {
         if (row > TEXT_LAST_ROW) break;
-
-        // Clear row first
-        for (int c = 1; c <= LINE_WIDTH; c++)
-            display_.WriteChar(c, row, static_cast<int>(' '));
-
         auto& line = committed_lines[i];
         for (int c = 0; c < static_cast<int>(line.size()) && c < LINE_WIDTH; c++) {
             display_.WriteChar(1 + c, row, static_cast<int>(line[c]));
         }
-        row++;
-        line_idx++;
-    }
-
-    // Write tentative lines (inverted)
-    for (int i = 0; i < static_cast<int>(tentative_lines.size()); i++) {
-        if (line_idx < skip) { line_idx++; continue; }
-        if (row > TEXT_LAST_ROW) break;
-
-        // Clear row first
-        for (int c = 1; c <= LINE_WIDTH; c++)
-            display_.WriteChar(c, row, static_cast<int>(' '));
-
-        auto& line = tentative_lines[i];
-        for (int c = 0; c < static_cast<int>(line.size()) && c < LINE_WIDTH; c++) {
-            display_.WriteChar(1 + c, row,
-                               static_cast<int>(line[c]) + INVERT_OFFSET);
-        }
-        row++;
-        line_idx++;
-    }
-
-    // Clear remaining rows
-    while (row <= TEXT_LAST_ROW) {
-        for (int c = 1; c <= LINE_WIDTH; c++)
-            display_.WriteChar(c, row, static_cast<int>(' '));
         row++;
     }
 }
@@ -296,15 +263,6 @@ void DMComposeScreen::Update() {
         needs_redraw_ = true;
     }
 
-    // Check tentative version
-    if (!paused_) {
-        int version = static_cast<int>(whisper->GetTentativeVersion());
-        if (version != last_tentative_version_) {
-            last_tentative_version_ = version;
-            needs_redraw_ = true;
-        }
-    }
-
     if (needs_redraw_) {
         RedrawText();
         needs_redraw_ = false;
@@ -317,7 +275,6 @@ bool DMComposeScreen::OnInput(const std::string& key) {
     // CLEAR — contact 13 (col 1, row 3)
     if (key == "13") {
         compose_buffer_.clear();
-        last_tentative_version_ = -1;
         RedrawText();
         return true;
     }
@@ -334,7 +291,6 @@ bool DMComposeScreen::OnInput(const std::string& key) {
             audio->Start();
         }
         UpdateButtonLabel();
-        needs_redraw_ = true;
         return true;
     }
 
@@ -352,21 +308,21 @@ bool DMComposeScreen::OnInput(const std::string& key) {
             flash_ = FlashState::SENT;
             flash_until_ = MonotonicNow() + 1.5;
 
-            // Clear text area and show confirmation
-            for (int r = TEXT_FIRST_ROW; r <= TEXT_LAST_ROW; r++) {
-                for (int c = 1; c <= LINE_WIDTH; c++)
-                    display_.WriteChar(c, r, static_cast<int>(' '));
-            }
+            // Re-stamp macro to clear text area in one shot, then show flash
+            display_.SetMacroMode();
+            display_.StampMacro(COMPOSE_MACRO);
+            display_.SetTextMode();
+            RenderDynamic();
             display_.WriteText(2, 3, "Sent!");
         } else {
             Logger::Warning("DMCompose: send failed");
             flash_ = FlashState::ERROR;
             flash_until_ = MonotonicNow() + 1.5;
 
-            for (int r = TEXT_FIRST_ROW; r <= TEXT_LAST_ROW; r++) {
-                for (int c = 1; c <= LINE_WIDTH; c++)
-                    display_.WriteChar(c, r, static_cast<int>(' '));
-            }
+            display_.SetMacroMode();
+            display_.StampMacro(COMPOSE_MACRO);
+            display_.SetTextMode();
+            RenderDynamic();
             display_.WriteText(2, 3, "Send failed!");
         }
         return true;

@@ -41,7 +41,6 @@ private:
     double flash_until_ = 0;
     enum class FlashState { NONE, SENT, ERROR } flash_ = FlashState::NONE;
 
-    int last_tentative_version_ = -1;
     bool needs_redraw_ = false;
 };
 
