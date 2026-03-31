@@ -129,7 +129,21 @@ void DMDetailScreen::Update() {
     }
 }
 
+bool DMDetailScreen::OnSelect(int index) {
+    if (index >= 0 && index < static_cast<int>(messages_.size())) {
+        pda_.SetSelectedDMMessage(index);
+        pda_.SetPendingNavigate("DM_MSG");
+        return true;
+    }
+    return false;
+}
+
 bool DMDetailScreen::OnInput(const std::string& key) {
+    // NEW button — contact 53 (col 5, row 3)
+    if (key == "53") {
+        pda_.PushScreen("DM_COMPOSE");
+        return true;
+    }
     return ListScreen::OnInput(key);
 }
 

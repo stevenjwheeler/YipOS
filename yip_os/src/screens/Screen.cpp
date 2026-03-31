@@ -38,6 +38,8 @@
 #include "DMScreen.hpp"
 #include "DMDetailScreen.hpp"
 #include "DMPairScreen.hpp"
+#include "DMComposeScreen.hpp"
+#include "DMMessageScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Glyphs.hpp"
@@ -179,6 +181,8 @@ std::unique_ptr<Screen> CreateScreen(const std::string& name, PDAController& pda
         {"DM",                 [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<DMScreen>(p); }},
         {"DM_DTL",             [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<DMDetailScreen>(p); }},
         {"DM_PAIR",            [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<DMPairScreen>(p); }},
+        {"DM_COMPOSE",         [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<DMComposeScreen>(p); }},
+        {"DM_MSG",             [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<DMMessageScreen>(p); }},
     };
 
     auto it = registry.find(name);

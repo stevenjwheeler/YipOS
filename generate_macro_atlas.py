@@ -768,9 +768,33 @@ def layout_dm(buf):
 
 
 def layout_dm_detail(buf):
-    """DM message thread: frame (title overridden at runtime) + back arrow."""
+    """DM message thread: frame (title overridden at runtime) + back/sel arrows + NEW button."""
     buf.put_frame("DM")
     buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
+    # NEW — contact 53 (col 5, row 3)
+    buf.put_text(35, 6, "NEW", inverted=True)
+    buf.put_status_bar()
+
+
+def layout_dm_message(buf):
+    """DM message detail: frame + back arrow + status bar."""
+    buf.put_frame("DM MSG")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_status_bar()
+
+
+def layout_dm_compose(buf):
+    """DM Compose: frame + back arrow + To: label + CLEAR/STOP/SEND buttons."""
+    buf.put_frame("COMPOSE")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_text(2, 1, "To:")
+    # CLEAR — contact 13 (col 1, row 3)
+    buf.put_text(1, 6, "CLEAR", inverted=True)
+    # STOP — contact 33 (col 3, row 3)
+    buf.put_text(17, 6, "STOP", inverted=True)
+    # SEND — contact 53 (col 5, row 3)
+    buf.put_text(35, 6, "SEND", inverted=True)
     buf.put_status_bar()
 
 
@@ -831,6 +855,8 @@ SCREEN_LAYOUTS = {
     38: ("CONVOS", layout_dm),
     39: ("DM DTL", layout_dm_detail),
     40: ("DM PAIR", layout_dm_pair),
+    41: ("COMPOSE", layout_dm_compose),
+    42: ("DM MSG", layout_dm_message),
 }
 
 

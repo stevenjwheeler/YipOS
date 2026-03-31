@@ -21,6 +21,7 @@ protected:
     void RenderRow(int i, bool selected) override;
     void WriteSelectionMark(int i, bool selected) override;
     void RenderEmpty() override;
+    bool OnSelect(int index) override;
 
 private:
     void RefreshMessages();

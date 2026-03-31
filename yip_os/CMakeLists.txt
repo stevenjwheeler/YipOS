@@ -137,6 +137,8 @@ set(YIPOS_SOURCES
     src/screens/DMScreen.cpp
     src/screens/DMDetailScreen.cpp
     src/screens/DMPairScreen.cpp
+    src/screens/DMComposeScreen.cpp
+    src/screens/DMMessageScreen.cpp
     src/net/DMClient.cpp
     src/img/QRGen.cpp
     src/translate/TranslationWorker.cpp

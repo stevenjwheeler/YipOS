@@ -673,8 +673,8 @@ void PDAController::RefreshDMCache() {
 
     // Shorter interval when DM or DM_DTL screen is active
     Screen* s = GetCurrentScreen();
-    if (s && (s->name == "DM" || s->name == "DM_DTL")) {
-        interval = 15.0;
+    if (s && (s->name == "DM" || s->name == "DM_DTL" || s->name == "DM_COMPOSE")) {
+        interval = 30.0;
     }
 
     double now = MonotonicNow();

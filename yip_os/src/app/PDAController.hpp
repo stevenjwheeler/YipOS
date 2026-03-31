@@ -123,6 +123,8 @@ public:
     DMClient& GetDMClient() { return *dm_client_; }
     void SetSelectedDMSession(const std::string& sid) { selected_dm_session_ = sid; }
     const std::string& GetSelectedDMSession() const { return selected_dm_session_; }
+    void SetSelectedDMMessage(int idx) { selected_dm_msg_idx_ = idx; }
+    int GetSelectedDMMessage() const { return selected_dm_msg_idx_; }
     bool HasUnseenDMCached() const { return has_unseen_dm_; }
     void RefreshDMCache();
     void MarkDMSeen();
@@ -222,6 +224,7 @@ private:
     std::unique_ptr<ChatClient> chat_client_;
     std::unique_ptr<DMClient> dm_client_;
     std::string selected_dm_session_;
+    int selected_dm_msg_idx_ = -1;
     std::unique_ptr<MediaController> media_controller_;
     std::unique_ptr<StockClient> stock_client_;
     std::unique_ptr<TwitchClient> twitch_client_;
@@ -270,12 +273,12 @@ private:
     // Chat unseen cache
     bool has_unseen_chat_ = false;
     double last_chat_check_ = 0;
-    static constexpr double CHAT_CHECK_INTERVAL_DEFAULT = 60.0;
+    static constexpr double CHAT_CHECK_INTERVAL_DEFAULT = 120.0;
 
     // DM unseen cache
     bool has_unseen_dm_ = false;
     double last_dm_check_ = 0;
-    static constexpr double DM_CHECK_INTERVAL_DEFAULT = 60.0;
+    static constexpr double DM_CHECK_INTERVAL_DEFAULT = 120.0;
 
     // Stock cache
     double last_stock_check_ = 0;
