@@ -254,6 +254,35 @@ static bool IsJunkText(const std::string& text) {
     return !has_alpha;
 }
 
+// Strip bracketed/parenthesized text: "(laughing)" "[music]" etc.
+static std::string StripBracketedText(const std::string& text) {
+    std::string result;
+    result.reserve(text.size());
+    int paren = 0, bracket = 0;
+    for (char c : text) {
+        if (c == '(') { paren++; continue; }
+        if (c == ')') { if (paren > 0) paren--; continue; }
+        if (c == '[') { bracket++; continue; }
+        if (c == ']') { if (bracket > 0) bracket--; continue; }
+        if (paren == 0 && bracket == 0) result += c;
+    }
+    // Collapse multiple spaces left by removal
+    std::string clean;
+    clean.reserve(result.size());
+    bool prev_space = true; // trim leading
+    for (char c : result) {
+        if (c == ' ') {
+            if (!prev_space) clean += c;
+            prev_space = true;
+        } else {
+            clean += c;
+            prev_space = false;
+        }
+    }
+    while (!clean.empty() && clean.back() == ' ') clean.pop_back();
+    return clean;
+}
+
 // Collect all segment text from whisper result
 static std::string CollectSegments(whisper_context* ctx) {
     int n = whisper_full_n_segments(ctx);
@@ -464,6 +493,12 @@ void WhisperWorker::ProcessLoop() {
         // Strip repetition hallucinations (whisper filling max_tokens with loops)
         std::string text = junk ? text_raw : StripRepetition(text_raw);
         bool was_stripped = (text != text_raw);
+
+        // Strip bracketed/parenthesized annotations like (laughing) or [music]
+        if (!junk && strip_brackets_) {
+            text = StripBracketedText(text);
+            if (text.empty()) junk = true;
+        }
 
         // Strip overlap with previous commit. The sliding window re-processes
         // old audio, so the output often starts with the previous commit's text.

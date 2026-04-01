@@ -201,6 +201,11 @@ int main(int argc, char* argv[]) {
             pda.GetSystemStats().SetDisk(saved_disk);
         }
 
+        if (config.GetState("whisper.strip_brackets", "0") == "1") {
+            whisper_worker.SetStripBrackets(true);
+            whisper_worker_loopback.SetStripBrackets(true);
+        }
+
         // Wire up OSC input handler
         osc.SetInputHandler([&pda](const std::string& address, float value) {
             if (address.find("CRT_Wrist_") != std::string::npos) {

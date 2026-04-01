@@ -1,6 +1,7 @@
 #include "ConfScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
+#include "audio/WhisperWorker.hpp"
 #include "core/Config.hpp"
 #include "core/Logger.hpp"
 #include <algorithm>
@@ -81,6 +82,11 @@ ConfScreen::ConfScreen(PDAController& pda) : Screen(pda) {
                          {30.0f, 60.0f, 300.0f, 0.0f}, 1, false});
     settings_.back().current = FindClosest(settings_.back().values,
         std::stof(config.GetState("chat.refresh", "60")));
+
+    settings_.push_back({"BRCKT", "whisper.strip_brackets", {"KEEP", "STRIP"},
+                         {0.0f, 1.0f}, 0, false});
+    settings_.back().current =
+        (config.GetState("whisper.strip_brackets", "0") == "1") ? 1 : 0;
 
     settings_.push_back({"REBOOT", "", {"GO!"}, {}, 0, true});
 }
@@ -251,6 +257,15 @@ void ConfScreen::ApplySetting(int setting_idx) {
         float val = s.values[s.current];
         config.SetState("chat.refresh", std::to_string(static_cast<int>(val)));
         Logger::Info("Chat refresh: " + s.presets[s.current]);
+    }
+    else if (s.label == "BRCKT") {
+        bool strip = s.current == 1;
+        config.SetState("whisper.strip_brackets", strip ? "1" : "0");
+        auto* w = pda_.GetWhisperWorker();
+        if (w) w->SetStripBrackets(strip);
+        auto* wl = pda_.GetWhisperWorkerLoopback();
+        if (wl) wl->SetStripBrackets(strip);
+        Logger::Info("Whisper bracket stripping: " + s.presets[s.current]);
     }
 }
 
