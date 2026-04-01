@@ -34,7 +34,6 @@
 #include "INTRPScreen.hpp"
 #include "INTRPConfScreen.hpp"
 #include "INTRPLangScreen.hpp"
-#include "QRTestScreen.hpp"
 #include "DMScreen.hpp"
 #include "DMDetailScreen.hpp"
 #include "DMPairScreen.hpp"
@@ -177,7 +176,6 @@ std::unique_ptr<Screen> CreateScreen(const std::string& name, PDAController& pda
         {"INTRP",              [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<INTRPScreen>(p); }},
         {"INTRP_CONF",         [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<INTRPConfScreen>(p); }},
         {"INTRP_LANG",         [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<INTRPLangScreen>(p); }},
-        {"QRTEST",             [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<QRTestScreen>(p); }},
         {"DM",                 [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<DMScreen>(p); }},
         {"DM_DTL",             [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<DMDetailScreen>(p); }},
         {"DM_PAIR",            [](PDAController& p) -> std::unique_ptr<Screen> { return std::make_unique<DMPairScreen>(p); }},

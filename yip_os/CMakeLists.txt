@@ -133,7 +133,6 @@ set(YIPOS_SOURCES
     src/screens/INTRPScreen.cpp
     src/screens/INTRPConfScreen.cpp
     src/screens/INTRPLangScreen.cpp
-    src/screens/QRTestScreen.cpp
     src/screens/DMScreen.cpp
     src/screens/DMDetailScreen.cpp
     src/screens/DMPairScreen.cpp

@@ -315,8 +315,9 @@ void DMPairScreen::Update() {
             }
         }
 
-        // After bitmap refresh completes, switch back to text mode for overlay
+        // After bitmap refresh completes, restore speed and switch to text for overlay
         if (qr_needs_text_overlay_ && !display_.IsBuffered()) {
+            display_.SetWriteDelay(saved_write_delay_);
             display_.SetTextMode();
             WriteCodeOverlay();
             qr_needs_text_overlay_ = false;
@@ -328,8 +329,11 @@ void DMPairScreen::Update() {
             now - last_qr_refresh_ >= QR_REFRESH_INTERVAL) {
             last_qr_refresh_ = now;
 
-            // Re-send QR light modules in bitmap mode
+            // Re-send QR light modules in bitmap mode at SLOW speed
+            // so remote users' squares fill in reliably
             display_.SetBitmapMode();
+            saved_write_delay_ = display_.GetWriteDelay();
+            display_.SetWriteDelay(0.07f);
             display_.BeginBuffered();
             QRGen qr;
             if (qr.Encode(code_)) {
@@ -338,7 +342,7 @@ void DMPairScreen::Update() {
                 }
             }
 
-            // After these writes flush, we'll switch to text and write the code
+            // After these writes flush, we'll restore speed, switch to text and write the code
             qr_needs_text_overlay_ = true;
         }
     }
@@ -432,6 +436,14 @@ bool DMPairScreen::OnInput(const std::string& key) {
     if (mode_ == Mode::CHOOSE) {
         // DIAL touch — contact 12 (col 1, row 2, near display row 4)
         if (key == "12") {
+            // Reuse existing code if still valid
+            if (!code_.empty() && MonotonicNow() < code_expires_) {
+                last_poll_ = MonotonicNow();
+                mode_ = Mode::RENDERING_QR;
+                RequestRender();
+                return true;
+            }
+
             mode_ = Mode::CREATING;
             RequestRender();
 
