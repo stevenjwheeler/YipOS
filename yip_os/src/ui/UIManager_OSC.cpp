@@ -16,6 +16,26 @@ void UIManager::RenderOSCTab(PDAController& pda, Config& config, OSCManager& osc
 
     ImGui::Separator();
 
+    // --- OSC Query toggle ---
+    {
+        bool query_enabled = config.osc_query_enabled;
+        if (ImGui::Checkbox("Enable OSC Query", &query_enabled)) {
+            config.osc_query_enabled = query_enabled;
+            if (!query_enabled) {
+                // Immediately stop OSCQuery from overriding the send target
+                manual_osc_override_ = true;
+                osc.SetSendTarget(config.osc_ip, config.osc_send_port);
+            } else {
+                manual_osc_override_ = false;
+            }
+            if (!config_path_.empty()) config.SaveToFile(config_path_);
+        }
+        if (config.osc_query_enabled != (osc_query_ != nullptr)) {
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "(restart to apply)");
+        }
+    }
+
     // --- OSC Query Status ---
     if (osc_query_) {
         ImGui::Text("OSC Query");
@@ -35,7 +55,7 @@ void UIManager::RenderOSCTab(PDAController& pda, Config& config, OSCManager& osc
         ImGui::TextColored(ImVec4(1.0f, 0.4f, 0.3f, 1.0f),
             "OSC Query failed to start — using static ports");
     } else {
-        ImGui::TextDisabled("OSC Query is disabled in config.ini");
+        ImGui::TextDisabled("OSC Query is disabled — using static ports");
     }
 
     ImGui::Separator();
