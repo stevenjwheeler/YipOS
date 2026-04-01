@@ -3,8 +3,10 @@
 #include "app/PDADisplay.hpp"
 #include "net/VRCAvatarData.hpp"
 #include "net/OSCManager.hpp"
+#include "core/Config.hpp"
 #include "core/Logger.hpp"
 #include <cstdio>
+#include <set>
 
 namespace YipOS {
 
@@ -48,10 +50,24 @@ void AVTRCtrlScreen::LoadData() {
     if (current_id.empty()) return;
 
     auto params = data->GetToggleParams(current_id);
+
+    // Load hidden-param set from config
+    std::string hidden_str = pda_.GetConfig().GetState("avtr.hidden." + current_id);
+    std::set<std::string> hidden;
+    if (!hidden_str.empty()) {
+        size_t start = 0;
+        while (start < hidden_str.size()) {
+            size_t end = hidden_str.find(';', start);
+            if (end == std::string::npos) end = hidden_str.size();
+            if (end > start) hidden.insert(hidden_str.substr(start, end - start));
+            start = end + 1;
+        }
+    }
+
     toggles_.clear();
-    toggles_.reserve(params.size());
     for (auto* p : params) {
-        toggles_.push_back({p, false});
+        if (hidden.count(p->name) == 0)
+            toggles_.push_back({p, false});
     }
 }
 

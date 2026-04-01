@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <set>
 #include <algorithm>
 #include <filesystem>
 
@@ -116,6 +117,77 @@ void UIManager::RenderAvatarTab(PDAController& pda, Config& config) {
     if (ImGui::Button("Save Path")) {
         config.vrc_osc_path = avtr_path_buf_.data();
         if (!config_path_.empty()) config.SaveToFile(config_path_);
+    }
+
+    // --- CTRL Filter section ---
+    if (avtr && !avtr->GetCurrentAvatarId().empty()) {
+        auto& avatar_id = avtr->GetCurrentAvatarId();
+        auto toggle_params = avtr->GetToggleParams(avatar_id);
+
+        if (!toggle_params.empty() && ImGui::CollapsingHeader("CTRL Filter")) {
+            ImGui::TextDisabled("Uncheck parameters to hide them from the PDA CTRL screen.");
+
+            // Parse current hidden set from config
+            std::string hidden_key = "avtr.hidden." + avatar_id;
+            std::string hidden_str = config.GetState(hidden_key);
+            std::set<std::string> hidden;
+            if (!hidden_str.empty()) {
+                size_t start = 0;
+                while (start < hidden_str.size()) {
+                    size_t end = hidden_str.find(';', start);
+                    if (end == std::string::npos) end = hidden_str.size();
+                    if (end > start) hidden.insert(hidden_str.substr(start, end - start));
+                    start = end + 1;
+                }
+            }
+
+            // Show All / Hide All buttons
+            if (ImGui::Button("Show All")) {
+                config.SetState(hidden_key, "");
+                hidden.clear();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Hide All")) {
+                hidden.clear();
+                std::string all;
+                for (auto* p : toggle_params) {
+                    if (!all.empty()) all += ';';
+                    all += p->name;
+                    hidden.insert(p->name);
+                }
+                config.SetState(hidden_key, all);
+            }
+            ImGui::SameLine();
+            ImGui::Text("%d / %d visible",
+                static_cast<int>(toggle_params.size() - hidden.size()),
+                static_cast<int>(toggle_params.size()));
+
+            ImGui::Separator();
+
+            // Checkbox per parameter
+            bool changed = false;
+            for (auto* p : toggle_params) {
+                bool visible = hidden.count(p->name) == 0;
+                std::string label = p->name + "##ctrl_filter";
+                if (ImGui::Checkbox(label.c_str(), &visible)) {
+                    if (visible)
+                        hidden.erase(p->name);
+                    else
+                        hidden.insert(p->name);
+                    changed = true;
+                }
+            }
+
+            // Serialize back if anything changed
+            if (changed) {
+                std::string new_str;
+                for (auto& h : hidden) {
+                    if (!new_str.empty()) new_str += ';';
+                    new_str += h;
+                }
+                config.SetState(hidden_key, new_str);
+            }
+        }
     }
 }
 
