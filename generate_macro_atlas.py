@@ -45,7 +45,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 COPY_DEST_DIR = os.path.join(
     os.path.expanduser("~"),
-    "Documents/unity/3d/unity/Rexipso Dark Test 1/"
+    "Documents/3d/unity/Rexipso Dark Test 1/"
     "Assets/Foxipso/Assets/Yip-Boi/Williams Tube/Textures",
 )
 
@@ -107,7 +107,7 @@ TILE_LABELS = [
 ]
 
 TILE_LABELS_P2 = [
-    ["DBG", "TWTCH", "INTRP", "QRTEST", "DM"],
+    ["DBG", "TWTCH", "INTRP", "-----", "DM"],
     ["-----", "-----", "-----", "-----", "-----"],
     ["-----", "-----", "-----", "-----", "-----"],
 ]
