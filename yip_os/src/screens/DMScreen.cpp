@@ -46,11 +46,13 @@ void DMScreen::Update() {
     int count = static_cast<int>(sessions_.size());
     bool unseen = pda_.HasUnseenDMCached();
 
-    // Re-render only when the list actually changed
+    // Re-render only when the list actually changed.
+    // Soft refresh (no ClearScreen/macro re-stamp) — the frame is already on screen.
     if (count != last_session_count_ || unseen != last_has_unseen_) {
         last_session_count_ = count;
         last_has_unseen_ = unseen;
-        pda_.StartRender(this);
+        display_.BeginBuffered();
+        RenderDynamic();
     }
 }
 

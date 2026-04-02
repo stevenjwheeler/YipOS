@@ -20,10 +20,11 @@ DMDetailScreen::DMDetailScreen(PDAController& pda) : ListScreen(pda) {
     auto* session = pda_.GetDMClient().GetSession(session_id_);
     if (session) {
         peer_name_ = session->peer_name;
-        // Mark seen — clear per-session flag + refresh global cache
+        // Mark seen — clear per-session flag + refresh global cache + persist
         if (!session->messages.empty()) {
             pda_.GetDMClient().MarkSessionSeen(session_id_, session->messages[0].date);
             pda_.MarkDMSeen();
+            pda_.SaveDMSessions();
         }
     }
     RefreshMessages();
@@ -124,8 +125,11 @@ void DMDetailScreen::Update() {
         if (!messages_.empty()) {
             pda_.GetDMClient().MarkSessionSeen(session_id_, messages_[0].date);
             pda_.MarkDMSeen();
+            pda_.SaveDMSessions();
         }
-        pda_.StartRender(this);
+        // Soft refresh — no ClearScreen/macro re-stamp, frame is already on screen
+        display_.BeginBuffered();
+        RenderDynamic();
     }
 }
 

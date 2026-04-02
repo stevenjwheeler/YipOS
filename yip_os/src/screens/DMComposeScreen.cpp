@@ -27,6 +27,7 @@ DMComposeScreen::DMComposeScreen(PDAController& pda) : Screen(pda) {
 
     if (cc_available_) {
         macro_index = COMPOSE_MACRO;
+        refresh_interval = -1;  // disable periodic re-stamp; it wipes the compose text area
     } else {
         macro_index = -1;  // dynamic render for "not configured" message
     }
@@ -309,6 +310,7 @@ bool DMComposeScreen::OnInput(const std::string& key) {
             if (session && !session->messages.empty()) {
                 pda_.GetDMClient().MarkSessionSeen(session_id_, session->messages[0].date);
                 pda_.MarkDMSeen();
+                pda_.SaveDMSessions();
             }
 
             // Show "Sent!" flash
