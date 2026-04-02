@@ -758,6 +758,14 @@ def layout_intrp_conf(buf):
     buf.put_status_bar()
 
 
+def layout_intrp_lang(buf):
+    """Interpreter Language selection: frame + back/sel arrows + status bar."""
+    buf.put_frame("LANGUAGE")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_glyph(COLS - 1, 1, G_RIGHT_A)
+    buf.put_status_bar()
+
+
 def layout_dm(buf):
     """DM conversation list: frame + back arrow + TR select + PAIR button."""
     buf.put_frame("CONVOS")
@@ -857,6 +865,7 @@ SCREEN_LAYOUTS = {
     40: ("DM PAIR", layout_dm_pair),
     41: ("COMPOSE", layout_dm_compose),
     42: ("DM MSG", layout_dm_message),
+    43: ("LANGUAGE", layout_intrp_lang),
 }
 
 

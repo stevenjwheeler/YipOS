@@ -141,6 +141,25 @@ void INTRPScreen::StopINTRP() {
     if (audio_mic && audio_mic->IsRunning()) audio_mic->Stop();
     if (whisper_loop && whisper_loop->IsRunning()) whisper_loop->Stop();
     if (audio_loop && audio_loop->IsRunning()) audio_loop->Stop();
+
+    // Drain committed queues so re-entering INTRP starts fresh
+    if (whisper_mic) {
+        while (whisper_mic->HasCommitted()) whisper_mic->PopCommitted();
+    }
+    if (whisper_loop) {
+        while (whisper_loop->HasCommitted()) whisper_loop->PopCommitted();
+    }
+
+    // Drain translation result queues
+#ifdef YIPOS_HAS_TRANSLATION
+    auto* translator = pda_.GetTranslationWorker();
+    if (translator) {
+        if (translator->IsRunning()) translator->Stop();
+        while (translator->HasResult(0)) translator->PopResult(0);
+        while (translator->HasResult(1)) translator->PopResult(1);
+    }
+#endif
+
     started_by_screen_ = false;
     Logger::Info("INTRP: Stopped");
 }

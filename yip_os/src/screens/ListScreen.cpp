@@ -87,6 +87,13 @@ void ListScreen::Render() {
 }
 
 void ListScreen::RenderDynamic() {
+    // Render selected row first so it appears immediately
+    if (ItemCount() > 0 && cursor_ >= 0 && cursor_ < ItemCountOnPage()) {
+        display_.BeginPriority();
+        WriteSelectionMark(cursor_, true);
+        RenderRow(cursor_, true);
+        display_.EndPriority();
+    }
     RenderRows();
     RenderPageIndicators();
     RenderClock();

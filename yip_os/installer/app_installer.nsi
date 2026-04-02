@@ -163,6 +163,7 @@ Section "Install"
     ; Create AppData directories for models, logs, etc.
     CreateDirectory "$APPDATA\yip_os"
     CreateDirectory "$APPDATA\yip_os\models"
+    CreateDirectory "$APPDATA\yip_os\models\nllb"
 
     ; Create shortcuts
     CreateDirectory "$SMPROGRAMS\YipOS"

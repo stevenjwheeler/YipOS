@@ -20,7 +20,7 @@ const std::vector<INTRPLangScreen::LangEntry> INTRPLangScreen::LANGUAGES = {
 
 INTRPLangScreen::INTRPLangScreen(PDAController& pda) : ListScreen(pda) {
     name = "INTRP LANG";
-    macro_index = -1; // no macro, use frame rendering
+    macro_index = 43;
 
     editing_field_ = pda_.GetConfig().GetState("intrp.editing", "their");
 
@@ -29,7 +29,8 @@ INTRPLangScreen::INTRPLangScreen(PDAController& pda) : ListScreen(pda) {
     std::string current = pda_.GetConfig().GetState(nvram_key, "en");
     for (int i = 0; i < static_cast<int>(LANGUAGES.size()); i++) {
         if (LANGUAGES[i].code == current) {
-            cursor_ = i;
+            page_ = i / ROWS_PER_PAGE;
+            cursor_ = i % ROWS_PER_PAGE;
             break;
         }
     }
@@ -41,29 +42,30 @@ int INTRPLangScreen::ItemCount() const {
 
 void INTRPLangScreen::RenderRow(int i, bool selected) {
     auto& d = display_;
+    int idx = GlobalIndex(i);
     int row = 1 + (i % ROWS_PER_PAGE);
-    int col = SEL_WIDTH + 1;
+    if (idx >= static_cast<int>(LANGUAGES.size())) return;
 
-    std::string text = LANGUAGES[i].label;
-    // Pad/truncate to fit
-    while (static_cast<int>(text.size()) < COLS - col - 1) text += ' ';
-    if (static_cast<int>(text.size()) > COLS - col - 1)
-        text = text.substr(0, COLS - col - 1);
-
-    d.WriteText(col, row, text);
+    const std::string& label = LANGUAGES[idx].label;
+    int len = static_cast<int>(label.size());
+    for (int c = 0; c < len; c++) {
+        int ch = static_cast<int>(label[c]);
+        if (selected && c < SEL_WIDTH) ch += INVERT_OFFSET;
+        d.WriteChar(1 + c, row, ch);
+    }
 }
 
 void INTRPLangScreen::WriteSelectionMark(int i, bool selected) {
     auto& d = display_;
+    int idx = GlobalIndex(i);
     int row = 1 + (i % ROWS_PER_PAGE);
-    if (selected) {
-        d.WriteChar(1, row, '>' + INVERT_OFFSET);
-        d.WriteChar(2, row, ' ' + INVERT_OFFSET);
-        d.WriteChar(3, row, ' ' + INVERT_OFFSET);
-    } else {
-        d.WriteChar(1, row, ' ');
-        d.WriteChar(2, row, ' ');
-        d.WriteChar(3, row, ' ');
+    if (idx >= static_cast<int>(LANGUAGES.size())) return;
+
+    const std::string& label = LANGUAGES[idx].label;
+    for (int c = 0; c < SEL_WIDTH; c++) {
+        int ch = (c < static_cast<int>(label.size())) ? static_cast<int>(label[c]) : ' ';
+        if (selected) ch += INVERT_OFFSET;
+        d.WriteChar(1 + c, row, ch);
     }
 }
 

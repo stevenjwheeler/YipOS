@@ -285,7 +285,12 @@ void UIManager::RenderINTRPTab(PDAController& pda, Config& config) {
     ImGui::BulletText("huggingface.co/JustFrederik/nllb-200-distilled-600M-ct2-int8");
     ImGui::BulletText("huggingface.co/JustFrederik/nllb-200-distilled-1.3B-ct2-int8");
     ImGui::Spacing();
-    ImGui::TextDisabled("Place all files (model.bin + sentencepiece.bpe.model + ...) in:");
+    ImGui::TextDisabled("Required files:");
+    ImGui::BulletText("model.bin");
+    ImGui::BulletText("sentencepiece.bpe.model");
+    ImGui::BulletText("shared_vocabulary.json (or shared_vocabulary.txt)");
+    ImGui::Spacing();
+    ImGui::TextDisabled("Place these files in:");
 #ifdef _WIN32
     ImGui::TextDisabled("  %%APPDATA%%\\yip_os\\models\\nllb\\");
 #else

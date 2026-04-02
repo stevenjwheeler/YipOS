@@ -44,26 +44,16 @@ void INTRPConfScreen::RenderContent() {
     std::string my_lang = config.GetState("intrp.my_lang", "en");
     std::string their_lang = config.GetState("intrp.their_lang", "es");
 
-    // Row 1: "I SPEAK" label
-    d.WriteText(2, 1, "I SPEAK");
-
-    // Row 1: touchable language label (inverted, right side)
-    // Touch zone: row 1, col 3-5 (touch 31, 41, 51)
+    // Row 1: "I SPEAK" + inverted language label (right-aligned)
     std::string my_label = GetLangLabel(my_lang);
     int my_col = COLS - 1 - static_cast<int>(my_label.size()) - 1;
-    // Clear area first
-    for (int c = 16; c < COLS - 1; c++) d.WriteChar(c, 1, ' ');
     for (int i = 0; i < static_cast<int>(my_label.size()); i++) {
         d.WriteChar(my_col + i, 1, static_cast<int>(my_label[i]) + INVERT_OFFSET);
     }
 
-    // Row 3: "THEY SPEAK" label
-    d.WriteText(2, 3, "THEY SPEAK");
-
-    // Row 3: touchable language label (inverted, right side)
+    // Row 3: "THEY SPEAK" + inverted language label (right-aligned)
     std::string their_label = GetLangLabel(their_lang);
     int their_col = COLS - 1 - static_cast<int>(their_label.size()) - 1;
-    for (int c = 16; c < COLS - 1; c++) d.WriteChar(c, 3, ' ');
     for (int i = 0; i < static_cast<int>(their_label.size()); i++) {
         d.WriteChar(their_col + i, 3, static_cast<int>(their_label[i]) + INVERT_OFFSET);
     }
@@ -76,23 +66,24 @@ void INTRPConfScreen::RenderContent() {
     else
         model_str += "(none)";
     d.WriteText(1, 5, model_str);
-
-    // Row 6: Config hint
-    d.WriteText(1, 6, "Config in desktop app");
 }
 
 bool INTRPConfScreen::OnInput(const std::string& key) {
     if (key.size() != 2) return false;
+    int tx = key[0] - '1'; // touch column 0-4
     int ty = key[1] - '1'; // touch row 0-2
 
-    // Touch row 0 (screen rows 1-2): "I SPEAK" language
+    // Only the right-side inverted language labels are buttons (col 5 = tx 4)
+    if (tx != 4) return false;
+
+    // Touch 51 (screen row 1): "I SPEAK" language
     if (ty == 0) {
         pda_.GetConfig().SetState("intrp.editing", "my");
         pda_.SetPendingNavigate("INTRP_LANG");
         return true;
     }
 
-    // Touch row 1 (screen rows 3-4): "THEY SPEAK" language
+    // Touch 52 (screen row 3): "THEY SPEAK" language
     if (ty == 1) {
         pda_.GetConfig().SetState("intrp.editing", "their");
         pda_.SetPendingNavigate("INTRP_LANG");
