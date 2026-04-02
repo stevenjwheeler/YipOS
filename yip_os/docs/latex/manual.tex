@@ -627,7 +627,7 @@ Yip OS boots into the Home screen after displaying a brief boot graphic. The Hom
   \toprule
   & \textbf{Col 1} & \textbf{Col 2} & \textbf{Col 3} & \textbf{Col 4} & \textbf{Col 5} \\
   \midrule
-  \textbf{Row 1} & DBG & ----- & INTRP & ----- & ----- \\[0.3em]
+  \textbf{Row 1} & DBG & ----- & INTRP & ----- & DM \\[0.3em]
   \textbf{Row 2} & ----- & ----- & ----- & ----- & ----- \\
   \textbf{Row 3} & ----- & ----- & ----- & ----- & ----- \\
   \bottomrule
@@ -1160,6 +1160,85 @@ Cryptocurrency symbols (BTC, DOGE, ETH, etc.) are automatically suffixed with \t
 \end{notebox}
 
 \newpage
+\subsection{DM --- Direct Messages}
+\label{sec:dm}
+
+A private messaging system that lets two Yip-Boi users exchange short text messages entirely from VRChat. Messages are composed using the \textbf{CC} (Closed Captions) speech-to-text engine (or via typing in text in the desktop UI) --- you speak into your microphone, Whisper transcribes it, and the transcript is sent as a message.
+
+\subsubsection{Pairing}
+
+Before you can exchange messages with someone, you must \textbf{pair} with them. Both users must be in the same VRChat world and able to see each other's CRT displays.
+
+Open the DM program from the Home screen (page 2), then tap \textbf{PAIR} in the conversation list. You will see two options:
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[DIAL] Generate a QR code on your CRT. Your friend scans it with their Yip-Boi by choosing SCAN on their device.
+  \item[SCAN] Scan a QR code displayed on your friend's CRT. Yip OS captures your VRChat window via screen capture and decodes the QR code automatically.
+\end{description}
+
+\begin{warnbox}[IMPORTANT]
+  For QR scanning to work, your \textbf{VRChat window must be visible} on your computer's display. If VRChat is minimized or fully occluded by another window, the screen capture will fail and no QR code will be detected.
+\end{warnbox}
+
+\noindent The QR code encodes a 6-digit pairing code that expires after 5 minutes. A manual code is also displayed below the QR image in case scanning fails --- your friend can enter it in the desktop companion app's DM tab.
+
+Once both sides confirm the pairing, the session is established and appears in both users' conversation lists.
+
+\subsubsection{Conversations}
+
+The \textbf{CONVOS} screen lists all paired conversations. Each row shows the peer's display name, a preview of the last message, and a relative timestamp. An \textbf{!} indicator appears next to conversations with unread messages (and in the status bar).
+
+Use \key{JOYSTICK} to cycle through conversations, then \key{SEL} to open one. Inside a conversation, messages are listed newest-first with \textbf{YOU:} or \textbf{THEM:} prefixes and timestamps. Press \key{SEL} to view the full message text.
+
+\subsubsection{Composing Messages}
+
+From inside a conversation, tap \textbf{NEW} to open the compose screen. This uses the same Whisper speech-to-text engine as CC --- speak into your microphone and the transcribed text appears on screen. Three buttons are available:
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[CLEAR] Erase the current draft.
+  \item[STOP / GO] Pause or resume audio capture (useful in noisy environments).
+  \item[SEND] Send the message. A brief ``Sent!'' confirmation appears before returning to the conversation.
+\end{description}
+
+\noindent Messages are limited to \textbf{280 characters} of printable ASCII text. Non-ASCII characters (Unicode, emoji, accented characters) are stripped by the server. This limit matches the display's character set --- only characters from the standard Character ROM (see Section~\ref{sec:charrom}) can be transmitted.
+
+\begin{notebox}
+  Composing messages requires CC to be configured first (see Section~\ref{sec:cc}). If no Whisper model is loaded, the compose screen will display a message directing you to CC~>~CONF.
+\end{notebox}
+
+\subsubsection{Session Management}
+
+Sessions can be managed in the \textbf{DM} tab of the desktop companion app:
+
+\begin{itemize}[leftmargin=2em, nosep]
+  \item View all paired sessions and their messages.
+  \item Delete individual sessions (client-side only --- see note below).
+  \item Initiate pairing via manual code entry (alternative to QR scanning).
+  \item Set your screen name.
+\end{itemize}
+
+\subsubsection{Privacy and Data}
+
+\begin{warnbox}[PRIVACY NOTICE]
+  Messages are transmitted and stored on a third-party server (Cloudflare Workers with KV storage). Messages are \textbf{not encrypted} beyond standard HTTPS transport. All messages and session data are \textbf{automatically deleted after 30 days} via server-side TTL expiration.
+\end{warnbox}
+
+\noindent Important details about how DM sessions work:
+
+\begin{itemize}[leftmargin=2em, nosep]
+  \item \textbf{Display names are fixed at pairing time.} Your name is recorded when you pair and does not update if you change it later. To update your name for a contact, delete the session and re-pair.
+  \item \textbf{Deletion is local only.} When you delete a conversation in the desktop app, it is removed from your device but \textbf{not} from the server or your peer's device. Your peer can still send you messages to the old session, but you will not receive them.
+  \item \textbf{Duplicate sessions are possible.} If you pair with the same person again without deleting the old session, both sessions will appear in your conversation list. Delete the old one manually if this happens.
+  \item \textbf{Each device has a unique anonymous ID} generated on first launch and stored locally. This ID is used to authenticate with the server --- it is not tied to your VRChat account or any other identity.
+\end{itemize}
+
+\noindent Your IP address is sent to and stored by Cloudflare as part of normal HTTPS/TCP transmission and for the purpose of rate limiting.
+
+Messages are stored in Cloudflare's KV cache for 30 days and then automatically purged. Message contents are anonymized by a random UUID but are associated with the screen name you set at pairing time. Any user can set any screen name --- if you pair with ``USER~A'' but they've set their screen name to some other VRChat username ``USER~B'', it is up to you to understand and remember that you're communicating with ``USER~A''. (If they change their name after pairing, you'll still see their old screen name.)
+
+The contents of your messages are viewable by the server operator (Foxipso), though I testify I have no intention or desire to read them. You should treat this messaging system as you would any other third-party, cloud-based messaging service (e.g., Facebook Messenger, iMessage, Google --- all have access to the content of your messages at the server level and are doing shit like training AI on it, believe you me).
+
+\newpage
 \subsection{Future Programs}
 
 \begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
@@ -1494,7 +1573,8 @@ The Williams Tube camera lives on the \textbf{UiMenu} layer, out of necessity, a
    [PGUP]  Page Up              Spinner = connection OK
    [PGDN]  Page Down            Lock icon = locked
    [SEL]   Select/Context       * = notification waiting
-   [JOY]   Scroll Down          Clock = 24h local time
+   [JOY]   Scroll Down          ! = unread DM
+                                Clock = 24h local time
  TOUCHSCREEN:
    5 x 3 grid (15 zones)     NAVIGATION:
    Index finger required        Home -> tap tile -> program
@@ -1517,6 +1597,9 @@ The Williams Tube camera lives on the \textbf{UiMenu} layer, out of necessity, a
 
   \item[CRT]
     Cathode Ray Tube. The display technology being lovingly emulated.
+
+  \item[DM Pairing]
+    The QR-code-based handshake that establishes a private messaging session between two Yip-Boi users. Requires both users to be in the same VRChat world. See Section~\ref{sec:dm}.
 
   \item[Glyph]
     A single character or symbol from the Character ROM.
