@@ -14,6 +14,7 @@ HeartScreen::HeartScreen(PDAController& pda) : Screen(pda) {
     name = "HEART";
     macro_index = 4;
     update_interval = 1;
+    refresh_interval = -1;  // disable periodic refresh; Update() builds graph progressively
     graph_data_.resize(GRAPH_WIDTH, 0);
 }
 

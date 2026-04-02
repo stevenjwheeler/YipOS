@@ -354,9 +354,8 @@ void PDAController::MaybeRefresh() {
     if (now - last_refresh_ >= interval) {
         Logger::Debug("Refreshing " + screen->name);
 
-        // Clear the render texture first so VRC UI artifacts / garbled
-        // pixels are wiped, matching what StartRender() does on entry.
-        display_.ClearScreen();
+        // No ClearScreen here — the macro stamp or Render() overwrites all
+        // cells, so clearing first would just create a visible blank frame.
 
         if (screen->macro_index >= 0) {
             display_.SetMacroMode();
