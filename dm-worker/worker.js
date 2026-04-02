@@ -12,7 +12,7 @@
 const PAIR_TTL = 300;            // 5 minutes
 const SESSION_TTL = 2592000;     // 30 days
 const MAX_MESSAGES = 20;         // per conversation (kept small — CRT chat, not Discord)
-const MAX_MESSAGE_LEN = 140;     // tweet-length
+const MAX_MESSAGE_LEN = 280;     // extended tweet-length
 const MAX_NAME_LEN = 20;
 const MAX_ID_LEN = 64;
 const MAX_BODY_BYTES = 4096;     // reject request bodies larger than this

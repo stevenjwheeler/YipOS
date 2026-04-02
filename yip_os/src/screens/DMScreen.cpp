@@ -13,7 +13,10 @@ using namespace Glyphs;
 DMScreen::DMScreen(PDAController& pda) : ListScreen(pda) {
     name = "CONVOS";
     macro_index = 38;
+    update_interval = 5.0f;
     RefreshSessions();
+    last_session_count_ = static_cast<int>(sessions_.size());
+    last_has_unseen_ = pda_.HasUnseenDMCached();
 }
 
 void DMScreen::RefreshSessions() {
@@ -36,6 +39,19 @@ void DMScreen::Render() {
 
 void DMScreen::RenderDynamic() {
     ListScreen::RenderDynamic();
+}
+
+void DMScreen::Update() {
+    RefreshSessions();
+    int count = static_cast<int>(sessions_.size());
+    bool unseen = pda_.HasUnseenDMCached();
+
+    // Re-render only when the list actually changed
+    if (count != last_session_count_ || unseen != last_has_unseen_) {
+        last_session_count_ = count;
+        last_has_unseen_ = unseen;
+        pda_.StartRender(this);
+    }
 }
 
 void DMScreen::RenderRow(int i, bool selected) {

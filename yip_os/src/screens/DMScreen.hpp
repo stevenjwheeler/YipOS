@@ -14,6 +14,7 @@ public:
 
     void Render() override;
     void RenderDynamic() override;
+    void Update() override;
     bool OnInput(const std::string& key) override;
 
 protected:
@@ -28,6 +29,8 @@ private:
     static std::string FormatRelativeTime(int64_t date);
 
     std::vector<const DMSession*> sessions_;
+    int last_session_count_ = 0;
+    bool last_has_unseen_ = false;
 };
 
 } // namespace YipOS

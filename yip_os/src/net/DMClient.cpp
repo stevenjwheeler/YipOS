@@ -384,9 +384,16 @@ bool DMClient::ParseMessages(const std::string& json, std::vector<DMMessage>& ou
                 }
                 if (pos < json.size()) pos++;
 
-                if (key == "from") msg.from_id = value;
-                else if (key == "from_name") msg.from_name = value;
-                else if (key == "text") msg.text = value;
+                // Strip to printable ASCII (matching server-side sanitize)
+                std::string clean;
+                clean.reserve(value.size());
+                for (char c : value) {
+                    if (c >= 0x20 && c <= 0x7e) clean += c;
+                }
+
+                if (key == "from") msg.from_id = clean;
+                else if (key == "from_name") msg.from_name = clean;
+                else if (key == "text") msg.text = clean;
             } else {
                 size_t ns = pos;
                 while (pos < json.size() && json[pos] != ',' && json[pos] != '}' && json[pos] != ' ')

@@ -27,7 +27,7 @@ private:
     static constexpr int TEXT_FIRST_ROW = 2;
     static constexpr int TEXT_LAST_ROW = 5;
     static constexpr int LINE_WIDTH = 38;
-    static constexpr int MAX_COMPOSE_LENGTH = 500;
+    static constexpr int MAX_COMPOSE_LENGTH = 280;
     static constexpr int COMPOSE_MACRO = 41;
 
     std::string session_id_;

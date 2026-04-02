@@ -304,6 +304,13 @@ bool DMComposeScreen::OnInput(const std::string& key) {
             // Refresh messages so they show up when we pop back
             pda_.GetDMClient().FetchMessages(session_id_, 0);
 
+            // Mark seen so our own sent message doesn't trigger "!" notification
+            auto* session = pda_.GetDMClient().GetSession(session_id_);
+            if (session && !session->messages.empty()) {
+                pda_.GetDMClient().MarkSessionSeen(session_id_, session->messages[0].date);
+                pda_.MarkDMSeen();
+            }
+
             // Show "Sent!" flash
             flash_ = FlashState::SENT;
             flash_until_ = MonotonicNow() + 1.5;
