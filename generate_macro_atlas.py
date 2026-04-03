@@ -821,6 +821,45 @@ def layout_dm_pair(buf):
     buf.put_status_bar()
 
 
+def layout_dm_pair_scanning(buf):
+    """DM Pair SCANNING mode: waiting for QR scan."""
+    buf.put_frame("DM PAIR")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_text(2, 2, "Scanning for QR...")
+    buf.put_text(2, 4, "Look at friend's CRT")
+    buf.put_status_bar()
+
+
+def layout_dm_pair_complete(buf):
+    """DM Pair COMPLETE mode: pairing succeeded."""
+    buf.put_frame("DM PAIR")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_text(2, 2, "Paired with:")
+    # Row 3: peer_name (dynamic)
+    buf.put_status_bar()
+
+
+def layout_dm_pair_failed(buf):
+    """DM Pair FAILED mode: pairing error."""
+    buf.put_frame("DM PAIR")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_text(2, 2, "Pairing failed")
+    # Row 3: error text (dynamic)
+    buf.put_text(2, 5, "RETRY", inverted=True)
+    buf.put_status_bar()
+
+
+def layout_dm_pair_joined(buf):
+    """DM Pair JOINED mode: peer connected, confirm?"""
+    buf.put_frame("DM PAIR")
+    buf.put_glyph(0, 1, G_LEFT_A)
+    buf.put_text(2, 2, "Peer connected!")
+    # Row 3: peer_name (dynamic)
+    buf.put_text(2, 5, "OK", inverted=True)
+    buf.put_text(6, 5, "Confirm pairing")
+    buf.put_status_bar()
+
+
 SCREEN_LAYOUTS = {
     0: ("HOME", layout_home),
     1: ("STATS", layout_stats),
@@ -866,6 +905,10 @@ SCREEN_LAYOUTS = {
     41: ("COMPOSE", layout_dm_compose),
     42: ("DM MSG", layout_dm_message),
     43: ("LANGUAGE", layout_intrp_lang),
+    44: ("PAIR SCAN", layout_dm_pair_scanning),
+    45: ("PAIR OK", layout_dm_pair_complete),
+    46: ("PAIR FAIL", layout_dm_pair_failed),
+    47: ("PAIR JOIN", layout_dm_pair_joined),
 }
 
 

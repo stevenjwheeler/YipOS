@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
 
         // Logger
         YipOS::Logger::Init(logDir);
-        YipOS::Logger::Info("YipOS starting up");
+        YipOS::Logger::Info(std::string("YipOS ") + YIP_VERSION + " (" + YIP_GIT_HASH + ") starting up");
 
         // Config
         YipOS::Config config;
@@ -287,6 +287,12 @@ int main(int argc, char* argv[]) {
         ui.SetConfigPath(configPath);
         if (osc_query) ui.SetOSCQueryServer(osc_query.get());
 
+        // Wire Logger → UI log tab
+        static YipOS::UIManager* s_ui = &ui;
+        YipOS::Logger::SetUICallback([](const std::string& line) {
+            s_ui->AddLogLine(line);
+        });
+
         // Wire up file drop → IMG screen
         ui.SetDropCallback([&pda](const std::string& path) {
             pda.SetDroppedImagePath(path);
@@ -348,11 +354,15 @@ int main(int argc, char* argv[]) {
             ui.Render(pda, config, osc);
             ui.EndFrame();
 
-            // 7. Yield — vsync handles frame pacing, brief sleep as fallback
-            std::this_thread::sleep_for(std::chrono::milliseconds(4));
+            // 7. Yield — vsync should handle frame pacing, but on some systems
+            // (Wayland, broken compositor) it's a no-op. Use 16ms (~60fps cap)
+            // as a safety floor so we don't burn 100% CPU when vsync fails.
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
         }
 
         // Shutdown — pop all screens first while workers are still alive
+        YipOS::Logger::SetUICallback(nullptr);
+        s_ui = nullptr;
         YipOS::Logger::Info("Shutting down");
         pda.GoHome();
         ui.SaveWindowSize(config);

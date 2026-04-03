@@ -66,6 +66,10 @@ private:
     static constexpr double QR_REFRESH_INTERVAL = 5.0;  // re-send QR + code overlay
     static constexpr int CHOOSE_MACRO = 40;
     static constexpr int QR_TEMPLATE_MACRO = 37;
+    static constexpr int SCANNING_MACRO = 44;
+    static constexpr int COMPLETE_MACRO = 45;
+    static constexpr int FAILED_MACRO = 46;
+    static constexpr int JOINED_MACRO = 47;
 };
 
 } // namespace YipOS

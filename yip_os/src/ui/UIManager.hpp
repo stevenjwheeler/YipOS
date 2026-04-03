@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <deque>
+#include <mutex>
 #include <cstdint>
 #include <array>
 #include <functional>
@@ -62,8 +63,9 @@ private:
 
     GLFWwindow* window_ = nullptr;
 
-    // Log circular buffer
+    // Log circular buffer (written from any thread via Logger callback)
     std::deque<std::string> log_lines_;
+    std::mutex log_mutex_;
     static constexpr size_t MAX_LOG_LINES = 1000;
     bool log_auto_scroll_ = true;
 

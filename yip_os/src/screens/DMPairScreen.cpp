@@ -40,18 +40,42 @@ void DMPairScreen::Render() {
         StartQRRender();
     } else if (mode_ == Mode::SHOW_CODE) {
         // QR is on screen, Update() manages refresh.
-    } else {
-        // Non-CHOOSE dynamic modes: draw frame + content manually
+    } else if (macro_index < 0) {
+        // Transient dynamic modes: draw frame + content manually
         RenderFrame("DM PAIR");
         display_.WriteGlyph(0, 1, G_LEFT_A);
         RenderContent();
         RenderStatusBar();
     }
+    // Macro modes (CHOOSE, SCANNING, COMPLETE, FAILED, JOINED):
+    // static content handled by macro stamp in StartRender
 }
 
 void DMPairScreen::RenderDynamic() {
     if (mode_ == Mode::RENDERING_QR || mode_ == Mode::SHOW_CODE) return;
-    RenderContent();
+
+    // Write only the dynamic parts over the macro stamp
+    switch (mode_) {
+    case Mode::COMPLETE:
+    case Mode::JOINED:
+        display_.WriteText(2, 3, peer_name_);
+        break;
+    case Mode::FAILED:
+        if (!error_.empty()) {
+            std::string err = error_;
+            if (static_cast<int>(err.size()) > 36)
+                err = err.substr(0, 33) + "...";
+            display_.WriteText(2, 3, err);
+        }
+        break;
+    default:
+        break;
+    }
+
+    // Transient modes still need full content
+    if (mode_ == Mode::CREATING || mode_ == Mode::JOINING)
+        RenderContent();
+
     RenderClock();
     RenderCursor();
 }
@@ -60,58 +84,14 @@ void DMPairScreen::RenderContent() {
     auto& d = display_;
 
     switch (mode_) {
-    case Mode::CHOOSE:
-        break;  // all static content is in macro 40
-
     case Mode::CREATING:
         d.WriteText(2, 3, "Creating session...");
         break;
-
-    case Mode::RENDERING_QR:
-        break;  // handled by StartQRRender
-
-    case Mode::SHOW_CODE:
-        break;  // handled by WriteCodeOverlay on the QR screen
-
-    case Mode::SCANNING:
-        d.WriteText(2, 2, "Scanning for QR...");
-        d.WriteText(2, 4, "Look at friend's CRT");
-        break;
-
-    case Mode::JOINED:
-        d.WriteText(2, 2, "Peer connected!");
-        d.WriteText(2, 3, peer_name_);
-        {
-            std::string label = "OK";
-            for (int i = 0; i < static_cast<int>(label.size()); i++)
-                d.WriteChar(2 + i, 5, static_cast<int>(label[i]) + INVERT_OFFSET);
-        }
-        d.WriteText(6, 5, "Confirm pairing");
-        break;
-
     case Mode::JOINING:
         d.WriteText(2, 3, "Joining session...");
         break;
-
-    case Mode::COMPLETE:
-        d.WriteText(2, 2, "Paired with:");
-        d.WriteText(2, 3, peer_name_);
-        break;
-
-    case Mode::FAILED:
-        d.WriteText(2, 2, "Pairing failed");
-        if (!error_.empty()) {
-            std::string err = error_;
-            if (static_cast<int>(err.size()) > 36)
-                err = err.substr(0, 33) + "...";
-            d.WriteText(2, 3, err);
-        }
-        {
-            std::string label = "RETRY";
-            for (int i = 0; i < static_cast<int>(label.size()); i++)
-                d.WriteChar(2 + i, 5, static_cast<int>(label[i]) + INVERT_OFFSET);
-        }
-        break;
+    default:
+        break;  // all other modes use macros
     }
 }
 
@@ -149,9 +129,14 @@ void DMPairScreen::StartQRRender() {
 }
 
 void DMPairScreen::RequestRender() {
-    // CHOOSE uses macro 40 (all static content baked in).
-    // All other modes use dynamic Render() since they have different layouts.
-    macro_index = (mode_ == Mode::CHOOSE) ? CHOOSE_MACRO : -1;
+    switch (mode_) {
+    case Mode::CHOOSE:   macro_index = CHOOSE_MACRO; break;
+    case Mode::SCANNING: macro_index = SCANNING_MACRO; break;
+    case Mode::COMPLETE: macro_index = COMPLETE_MACRO; break;
+    case Mode::FAILED:   macro_index = FAILED_MACRO; break;
+    case Mode::JOINED:   macro_index = JOINED_MACRO; break;
+    default:             macro_index = -1; break;  // CREATING, JOINING, RENDERING_QR
+    }
     pda_.StartRender(this);
 }
 
@@ -296,6 +281,7 @@ void DMPairScreen::Update() {
             last_poll_ = now;
             std::string status, peer;
             if (client.PairStatus(session_id_, status, peer)) {
+                Logger::Debug("DMPair: poll status=" + status + " peer=" + peer);
                 if (status == "confirmed") {
                     // Both sides auto-confirmed on join
                     peer_name_ = peer;
@@ -323,22 +309,37 @@ void DMPairScreen::Update() {
             qr_needs_text_overlay_ = false;
         }
 
-        // Re-send QR data + code overlay when display is idle.
-        // This patches any dropped OSC writes without clearing the screen.
+        // Re-send full QR data + code overlay when display is idle.
+        // Writes ALL modules (dark + light) plus 1px margin at NORM speed
+        // so the entire QR self-heals even if the macro stamp was corrupted.
         if (!qr_needs_text_overlay_ && !display_.IsBuffered() &&
             now - last_qr_refresh_ >= QR_REFRESH_INTERVAL) {
             last_qr_refresh_ = now;
 
-            // Re-send QR light modules in bitmap mode at SLOW speed
-            // so remote users' squares fill in reliably
             display_.SetBitmapMode();
             saved_write_delay_ = display_.GetWriteDelay();
-            display_.SetWriteDelay(0.07f);
+            // Use normal write speed for refresh (initial render uses SLOW)
             display_.BeginBuffered();
             QRGen qr;
             if (qr.Encode(code_)) {
-                for (auto& mod : qr.GetLightModules()) {
-                    display_.WriteChar(mod.col, mod.row, 255);  // VQ_WHITE
+                auto& matrix = qr.GetMatrix();
+                constexpr int OFF = QRGen::OFFSET;
+                constexpr int SZ = QRGen::SIZE;
+
+                // 1-pixel dark margin around QR (quiet zone repair)
+                for (int i = OFF - 1; i <= OFF + SZ; i++) {
+                    display_.WriteChar(i, OFF - 1, 0);
+                    display_.WriteChar(i, OFF + SZ, 0);
+                    display_.WriteChar(OFF - 1, i, 0);
+                    display_.WriteChar(OFF + SZ, i, 0);
+                }
+
+                // All QR modules: dark=0, light=255
+                for (int r = 0; r < SZ; r++) {
+                    for (int c = 0; c < SZ; c++) {
+                        display_.WriteChar(c + OFF, r + OFF,
+                                           matrix[r][c] ? 0 : 255);
+                    }
                 }
             }
 
@@ -426,6 +427,18 @@ bool DMPairScreen::OnInput(const std::string& key) {
         }
         if (mode_ == Mode::SCANNING) {
             StopScanning();
+        }
+        // Before leaving: check if a session was confirmed while we weren't polling
+        if (!session_id_.empty()) {
+            std::string status, peer;
+            if (client.PairStatus(session_id_, status, peer)) {
+                Logger::Info("DMPair: back-check status=" + status + " peer=" + peer);
+                if (status == "confirmed" || status == "joined") {
+                    client.AddSession(session_id_, "", peer);
+                    pda_.SaveDMSessions();
+                    Logger::Info("DMPair: recovered confirmed session on back");
+                }
+            }
         }
         // Pop screen — tell controller we're done handling back
         skip_clock = false;

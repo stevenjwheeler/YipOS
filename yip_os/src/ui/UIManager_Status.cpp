@@ -15,7 +15,8 @@ void UIManager::RenderStatusTab(PDAController& pda, OSCManager& osc) {
     auto& display = pda.GetDisplay();
 
     // --- Header ---
-    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "YIP OS v1.1.1");
+    std::string header = std::string("YIP OS v") + YIP_VERSION + " (" + YIP_GIT_HASH + ")";
+    ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "%s", header.c_str());
     ImGui::SameLine();
     ImGui::TextDisabled("(C) Foxipso 2026");
     ImGui::TextDisabled("Enable the PDA and Williams Tube in VRChat to see the output!");

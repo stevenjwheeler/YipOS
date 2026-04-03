@@ -14,7 +14,11 @@ DMScreen::DMScreen(PDAController& pda) : ListScreen(pda) {
     name = "CONVOS";
     macro_index = 38;
     update_interval = 5.0f;
+    // Fetch fresh data immediately so new sessions appear without waiting for poll timer
+    pda_.GetDMClient().PollAll();
+    pda_.MarkDMSeen();
     RefreshSessions();
+    Logger::Info("CONVOS: opened with " + std::to_string(sessions_.size()) + " sessions");
     last_session_count_ = static_cast<int>(sessions_.size());
     last_has_unseen_ = pda_.HasUnseenDMCached();
 }

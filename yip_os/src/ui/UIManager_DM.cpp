@@ -214,6 +214,8 @@ void UIManager::RenderDMTab(PDAController& pda, Config& config) {
     // Manual poll
     if (ImGui::Button("Refresh All")) {
         client.PollAll();
+        pda.MarkDMSeen();
+        Logger::Info("DM manual refresh: " + std::to_string(sessions.size()) + " sessions");
     }
     ImGui::SameLine();
     ImGui::TextDisabled("Auto-polls every 60s");
@@ -224,6 +226,21 @@ void UIManager::RenderDMTab(PDAController& pda, Config& config) {
     try { poll_sec = std::stoi(poll_str); } catch (...) {}
     if (ImGui::SliderInt("Poll Interval (s)", &poll_sec, 15, 300)) {
         config.SetState("dm.poll_interval", std::to_string(poll_sec));
+    }
+
+    // Diagnostics
+    if (ImGui::CollapsingHeader("Diagnostics")) {
+        ImGui::Text("Sessions: %d", static_cast<int>(sessions.size()));
+        ImGui::Text("Global unseen: %s", pda.HasUnseenDMCached() ? "true" : "false");
+        for (auto& s : sessions) {
+            ImGui::PushID((s.session_id + "_diag").c_str());
+            ImGui::BulletText("%s — msgs: %d, unseen: %s, last_seen: %lld",
+                              s.peer_name.c_str(),
+                              static_cast<int>(s.messages.size()),
+                              s.has_unseen ? "YES" : "no",
+                              static_cast<long long>(s.last_seen_date));
+            ImGui::PopID();
+        }
     }
 }
 

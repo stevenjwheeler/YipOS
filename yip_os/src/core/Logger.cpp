@@ -29,6 +29,7 @@ std::string Logger::logPath_;
 bool Logger::initialized_ = false;
 Logger::Level Logger::minLevel_ = Logger::Level::INFO;
 std::mutex Logger::mutex_;
+Logger::UICallback Logger::ui_callback_ = nullptr;
 
 void Logger::WriteRaw(const char* data, size_t len) {
     if (logFd_ < 0) return;
@@ -97,6 +98,14 @@ void Logger::Log(Level level, const std::string& message) {
 
     // Always echo to stderr
     fprintf(stderr, "%s", entry.c_str());
+
+    // Feed to UI log tab if callback is set
+    if (ui_callback_) {
+        // Strip trailing newline for ImGui display
+        std::string trimmed = entry;
+        if (!trimmed.empty() && trimmed.back() == '\n') trimmed.pop_back();
+        ui_callback_(trimmed);
+    }
 }
 
 void Logger::Debug(const std::string& msg) { Log(Level::DEBUG, msg); }

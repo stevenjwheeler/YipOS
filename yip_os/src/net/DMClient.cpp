@@ -259,6 +259,7 @@ bool DMClient::PairStatus(const std::string& session_id, std::string& out_status
 
     out_status = FindVal(kv, "status");
     out_peer_name = FindVal(kv, "peer_name");
+    Logger::Debug("DMClient PairStatus: status=" + out_status + " peer=" + out_peer_name);
     return !out_status.empty();
 }
 
@@ -311,6 +312,9 @@ bool DMClient::FetchMessages(const std::string& session_id, int64_t since) {
         }
     }
 
+    Logger::Debug("DMClient FetchMessages: " + session_id + " msgs=" +
+                  std::to_string(session->messages.size()) + " unseen=" +
+                  (session->has_unseen ? "true" : "false"));
     return true;
 }
 
@@ -464,6 +468,7 @@ void DMClient::MarkSessionSeen(const std::string& session_id, int64_t newest_dat
 }
 
 void DMClient::PollAll() {
+    Logger::Debug("DMClient PollAll: polling " + std::to_string(sessions_.size()) + " sessions");
     for (auto& s : sessions_) {
         FetchMessages(s.session_id, 0);
     }

@@ -1,8 +1,10 @@
 #include "UIManager.hpp"
 #include "app/PDAController.hpp"
 #include "core/Config.hpp"
+#include "core/Logger.hpp"
 
 #include <imgui.h>
+#include <cstdlib>
 
 namespace YipOS {
 
@@ -30,16 +32,36 @@ void UIManager::RenderNVRAMTab(PDAController& pda, Config& config) {
 }
 
 void UIManager::RenderLogTab() {
+    auto& path = Logger::GetLogPath();
+    if (!path.empty()) {
+        ImGui::TextDisabled("Log file: %s", path.c_str());
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Open")) {
+#ifdef _WIN32
+            std::string cmd = "start \"\" \"" + path + "\"";
+#elif __APPLE__
+            std::string cmd = "open \"" + path + "\"";
+#else
+            std::string cmd = "xdg-open \"" + path + "\" &";
+#endif
+            std::system(cmd.c_str());
+        }
+    }
+
     ImGui::Checkbox("Auto-scroll", &log_auto_scroll_);
     ImGui::SameLine();
     if (ImGui::Button("Clear")) {
+        std::lock_guard<std::mutex> lock(log_mutex_);
         log_lines_.clear();
     }
 
     ImGui::Separator();
     ImGui::BeginChild("LogScroll", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
-    for (const auto& line : log_lines_) {
-        ImGui::TextUnformatted(line.c_str());
+    {
+        std::lock_guard<std::mutex> lock(log_mutex_);
+        for (const auto& line : log_lines_) {
+            ImGui::TextUnformatted(line.c_str());
+        }
     }
     if (log_auto_scroll_ && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
         ImGui::SetScrollHereY(1.0f);

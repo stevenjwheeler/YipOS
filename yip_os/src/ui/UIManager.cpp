@@ -109,6 +109,7 @@ bool UIManager::ShouldClose() const {
     return window_ && glfwWindowShouldClose(window_);
 }
 
+
 void UIManager::BeginFrame() {
     glfwPollEvents();
     ImGui_ImplOpenGL3_NewFrame();
@@ -241,6 +242,7 @@ void UIManager::EndFrame() {
 }
 
 void UIManager::AddLogLine(const std::string& line) {
+    std::lock_guard<std::mutex> lock(log_mutex_);
     if (log_lines_.size() >= MAX_LOG_LINES) {
         log_lines_.pop_front();
     }

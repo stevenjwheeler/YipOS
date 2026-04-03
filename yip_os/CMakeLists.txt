@@ -1,5 +1,17 @@
 cmake_minimum_required(VERSION 3.15)
-project(yip_os VERSION 1.1.1 LANGUAGES C CXX)
+project(yip_os VERSION 1.1.2 LANGUAGES C CXX)
+
+# Capture git short hash at configure time
+execute_process(
+    COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    OUTPUT_VARIABLE YIP_GIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+if(NOT YIP_GIT_HASH)
+    set(YIP_GIT_HASH "unknown")
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -246,6 +258,11 @@ endif()
 find_package(OpenGL REQUIRED)
 
 add_executable(yip_os ${YIPOS_SOURCES})
+
+target_compile_definitions(yip_os PRIVATE
+    YIP_VERSION="${PROJECT_VERSION}"
+    YIP_GIT_HASH="${YIP_GIT_HASH}"
+)
 
 target_include_directories(yip_os PRIVATE
     src

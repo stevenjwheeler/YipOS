@@ -313,26 +313,21 @@ bool DMComposeScreen::OnInput(const std::string& key) {
                 pda_.SaveDMSessions();
             }
 
-            // Show "Sent!" flash
+            // Show clean "Sent" screen
             flash_ = FlashState::SENT;
             flash_until_ = MonotonicNow() + 1.5;
-
-            // Re-stamp macro to clear text area in one shot, then show flash
-            display_.SetMacroMode();
-            display_.StampMacro(COMPOSE_MACRO);
+            macro_index = -1;  // prevent refresh from re-stamping
+            display_.ClearScreen();
             display_.SetTextMode();
-            RenderDynamic();
-            display_.WriteText(2, 3, "Sent!");
+            display_.WriteText(18, 4, "Sent");
         } else {
             Logger::Warning("DMCompose: send failed");
             flash_ = FlashState::ERROR;
             flash_until_ = MonotonicNow() + 1.5;
-
-            display_.SetMacroMode();
-            display_.StampMacro(COMPOSE_MACRO);
+            macro_index = -1;
+            display_.ClearScreen();
             display_.SetTextMode();
-            RenderDynamic();
-            display_.WriteText(2, 3, "Send failed!");
+            display_.WriteText(14, 4, "Send failed!");
         }
         return true;
     }

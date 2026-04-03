@@ -496,6 +496,12 @@ void PDAController::RunBootSequence() {
     display_.StampMacro(BOOT_MACRO_INDEX);
     display_.SetTextMode();
 
+    // Overwrite baked version text with actual version + git hash
+    std::string ver = std::string(YIP_VERSION) + " " + YIP_GIT_HASH;
+    int ver_col = (COLS - static_cast<int>(ver.size())) / 2;
+    if (ver_col < 0) ver_col = 0;
+    display_.WriteText(ver_col, 3, ver);
+
     // Progress bar dimensions (must match generate_macro_atlas.py layout_boot)
     constexpr int bar_width = 20;
     constexpr int bar_col = (COLS - bar_width) / 2;
