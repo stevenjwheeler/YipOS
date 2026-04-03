@@ -228,6 +228,14 @@ void UIManager::RenderDMTab(PDAController& pda, Config& config) {
         config.SetState("dm.poll_interval", std::to_string(poll_sec));
     }
 
+    // Audio cues
+    bool dm_audio = config.GetState("dm.audio", "0") == "1";
+    if (ImGui::Checkbox("Pairing audio cues", &dm_audio)) {
+        config.SetState("dm.audio", dm_audio ? "1" : "0");
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("(beep while scanning, error sound on failure)");
+
     // Diagnostics
     if (ImGui::CollapsingHeader("Diagnostics")) {
         ImGui::Text("Sessions: %d", static_cast<int>(sessions.size()));

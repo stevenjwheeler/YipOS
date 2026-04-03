@@ -155,6 +155,7 @@ set(YIPOS_SOURCES
     src/translate/TranslationWorker.cpp
     src/img/VQEncoder.cpp
     src/audio/AudioCapture.cpp
+    src/audio/AudioPlayer.cpp
     src/audio/WhisperWorker.cpp
     src/ui/UIManager.cpp
     src/ui/UIManager_Status.cpp
@@ -172,6 +173,7 @@ if(UNIX)
     list(APPEND YIPOS_SOURCES
         src/platform/SystemStats_linux.cpp
         src/audio/AudioCapture_linux.cpp
+        src/audio/AudioPlayer_linux.cpp
         src/media/MediaController_linux.cpp
         src/platform/ScreenCapture_linux.cpp
     )
@@ -179,6 +181,7 @@ elseif(WIN32)
     list(APPEND YIPOS_SOURCES
         src/platform/SystemStats_windows.cpp
         src/audio/AudioCapture_windows.cpp
+        src/audio/AudioPlayer_windows.cpp
         src/media/MediaController_windows.cpp
         src/platform/ScreenCapture_windows.cpp
     )

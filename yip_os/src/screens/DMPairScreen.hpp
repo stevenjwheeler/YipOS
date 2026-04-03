@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Screen.hpp"
+#include "audio/AudioPlayer.hpp"
 #include <string>
 #include <memory>
 #include <thread>
@@ -64,6 +65,12 @@ private:
     static constexpr double CODE_TTL = 300.0;
     static constexpr double SCAN_INTERVAL = 2.0;   // seconds between captures
     static constexpr double QR_REFRESH_INTERVAL = 5.0;  // re-send QR + code overlay
+    // Audio feedback
+    AudioPlayer scan_beep_;
+    AudioPlayer error_sound_;
+    void LoadSounds();
+    bool AudioEnabled() const;
+
     static constexpr int CHOOSE_MACRO = 40;
     static constexpr int QR_TEMPLATE_MACRO = 37;
     static constexpr int SCANNING_MACRO = 44;

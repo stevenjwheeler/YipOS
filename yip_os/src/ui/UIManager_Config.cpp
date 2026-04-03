@@ -38,11 +38,14 @@ void UIManager::RenderLogTab() {
         ImGui::SameLine();
         if (ImGui::SmallButton("Open")) {
 #ifdef _WIN32
-            std::string cmd = "start \"\" \"" + path + "\"";
+            // Open Explorer to the folder (file may be locked by the logger)
+            std::string dir = path.substr(0, path.find_last_of("\\/"));
+            std::string cmd = "explorer \"" + dir + "\"";
 #elif __APPLE__
-            std::string cmd = "open \"" + path + "\"";
+            std::string cmd = "open -R \"" + path + "\"";
 #else
-            std::string cmd = "xdg-open \"" + path + "\" &";
+            std::string dir = path.substr(0, path.find_last_of('/'));
+            std::string cmd = "xdg-open \"" + dir + "\" &";
 #endif
             std::system(cmd.c_str());
         }

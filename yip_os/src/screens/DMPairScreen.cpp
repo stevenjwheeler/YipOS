@@ -1,6 +1,7 @@
 #include "DMPairScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
+#include "core/Config.hpp"
 #include "net/DMClient.hpp"
 #include "img/QRGen.hpp"
 #include "platform/ScreenCapture.hpp"
@@ -24,9 +25,23 @@ DMPairScreen::DMPairScreen(PDAController& pda) : Screen(pda) {
     macro_index = 40;
     handle_back = true;  // we handle TL ourselves in OnInput
     update_interval = 1.0f;
+    LoadSounds();
+}
+
+void DMPairScreen::LoadSounds() {
+    std::string assets = pda_.GetAssetsPath();
+    if (assets.empty()) return;
+    scan_beep_.LoadWAV(assets + "/sounds/scan_beep.wav");
+    error_sound_.LoadWAV(assets + "/sounds/error.wav");
+}
+
+bool DMPairScreen::AudioEnabled() const {
+    return pda_.GetConfig().GetState("dm.audio", "0") == "1";
 }
 
 DMPairScreen::~DMPairScreen() {
+    scan_beep_.Stop();
+    error_sound_.Stop();
     StopScanning();
     if (qr_rendering_) {
         display_.CancelBuffered();
@@ -356,6 +371,7 @@ void DMPairScreen::Update() {
             code = scanned_code_;
         }
         if (!code.empty()) {
+            scan_beep_.Stop();
             StopScanning();
             // Auto-join with scanned code
             mode_ = Mode::JOINING;
@@ -372,10 +388,12 @@ void DMPairScreen::Update() {
                 } else {
                     mode_ = Mode::FAILED;
                     error_ = "Confirm failed";
+                    if (AudioEnabled() && error_sound_.IsLoaded()) error_sound_.Play();
                 }
             } else {
                 mode_ = Mode::FAILED;
                 error_ = "Invalid or expired code";
+                if (AudioEnabled() && error_sound_.IsLoaded()) error_sound_.Play();
             }
             RequestRender();
         }
@@ -426,6 +444,7 @@ bool DMPairScreen::OnInput(const std::string& key) {
             return true;
         }
         if (mode_ == Mode::SCANNING) {
+            scan_beep_.Stop();
             StopScanning();
         }
         // Before leaving: check if a session was confirmed while we weren't polling
@@ -470,6 +489,7 @@ bool DMPairScreen::OnInput(const std::string& key) {
             } else {
                 mode_ = Mode::FAILED;
                 error_ = "Network error";
+                if (AudioEnabled() && error_sound_.IsLoaded()) error_sound_.Play();
             }
             RequestRender();
             return true;
@@ -478,6 +498,7 @@ bool DMPairScreen::OnInput(const std::string& key) {
         if (key == "52") {
             mode_ = Mode::SCANNING;
             StartScanning();
+            if (AudioEnabled() && scan_beep_.IsLoaded()) scan_beep_.Play(true);
             RequestRender();
             return true;
         }
@@ -493,6 +514,7 @@ bool DMPairScreen::OnInput(const std::string& key) {
             } else {
                 mode_ = Mode::FAILED;
                 error_ = "Confirm failed";
+                if (AudioEnabled() && error_sound_.IsLoaded()) error_sound_.Play();
             }
             RequestRender();
             return true;
