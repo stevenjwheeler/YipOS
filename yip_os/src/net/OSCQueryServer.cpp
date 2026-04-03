@@ -635,6 +635,18 @@ void OSCQueryServer::MDNSListenThread() {
                      " osc udp:" + std::to_string(osc_port_) + ")");
     }
 
+    // Set a receive timeout so mdns_socket_listen blocks instead of busy-spinning.
+    // Without this, recvfrom returns immediately on no data → 100% CPU.
+#ifdef _WIN32
+    DWORD tv = 500;
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
+#else
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 500000; // 500ms
+    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+#endif
+
     char buffer[2048];
     while (running_) {
         mdns_socket_listen(sock, buffer, sizeof(buffer), MDNSListenCallback, &ctx);
