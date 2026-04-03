@@ -1,3 +1,4 @@
+#include "git_hash.h"
 #include "UIManager.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"

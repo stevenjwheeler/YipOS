@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 
+#include "git_hash.h"
 #include "core/Platform.hpp"
 #include "core/PathUtils.hpp"
 #include "core/Logger.hpp"

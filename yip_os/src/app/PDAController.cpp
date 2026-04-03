@@ -1,3 +1,4 @@
+#include "git_hash.h"
 #include "PDAController.hpp"
 #include "PDADisplay.hpp"
 #include "screens/Screen.hpp"
