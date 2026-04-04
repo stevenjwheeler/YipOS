@@ -58,14 +58,17 @@ bool UIManager::Initialize(const std::string& title) {
 
     // Set window icon from bundled PNG
     {
+        std::string icon_path = (assets_path_.empty() ? std::string("assets")
+                                                      : assets_path_)
+                                + "/yip_os_logo.png";
         int iw, ih, ic;
-        unsigned char* pixels = stbi_load("assets/yip_os_logo.png", &iw, &ih, &ic, 4);
+        unsigned char* pixels = stbi_load(icon_path.c_str(), &iw, &ih, &ic, 4);
         if (pixels) {
             GLFWimage icon{ iw, ih, pixels };
             glfwSetWindowIcon(window_, 1, &icon);
             stbi_image_free(pixels);
         } else {
-            Logger::Debug("Window icon assets/yip_os_logo.png not found");
+            Logger::Debug("Window icon not found at " + icon_path);
         }
     }
 
