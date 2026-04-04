@@ -35,8 +35,8 @@ RequestExecutionLevel admin
 
 ; Interface settings
 !define MUI_ABORTWARNING
-!define MUI_ICON "${NSISDIR}\Contrib\Graphics\Icons\modern-install.ico"
-!define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_ICON "..\assets\yip_os_logo.ico"
+!define MUI_UNICON "..\assets\yip_os_logo.ico"
 
 ; Variables
 Var Dialog
@@ -155,6 +155,7 @@ Section "Install"
     ; Assets
     SetOutPath "$INSTDIR\assets"
     File /nonfatal "..\assets\vq_codebook.npy"
+    File /nonfatal "..\assets\yip_os_logo.png"
 
     ; Default images for IMG screen
     SetOutPath "$INSTDIR\assets\images"
@@ -204,6 +205,7 @@ Section "Uninstall"
     Delete "$INSTDIR\mecabrc"
     RMDir /r "$INSTDIR\mecab-dic"
     Delete "$INSTDIR\assets\vq_codebook.npy"
+    Delete "$INSTDIR\assets\yip_os_logo.png"
     RMDir /r "$INSTDIR\assets\images"
     RMDir "$INSTDIR\assets"
     RMDir "$INSTDIR"

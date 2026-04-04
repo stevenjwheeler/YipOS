@@ -9,6 +9,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <imgui.h>
+#include "stb/stb_image.h"
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
@@ -54,6 +55,19 @@ bool UIManager::Initialize(const std::string& title) {
 
     glfwMakeContextCurrent(window_);
     glfwSwapInterval(1); // vsync
+
+    // Set window icon from bundled PNG
+    {
+        int iw, ih, ic;
+        unsigned char* pixels = stbi_load("assets/yip_os_logo.png", &iw, &ih, &ic, 4);
+        if (pixels) {
+            GLFWimage icon{ iw, ih, pixels };
+            glfwSetWindowIcon(window_, 1, &icon);
+            stbi_image_free(pixels);
+        } else {
+            Logger::Debug("Window icon assets/yip_os_logo.png not found");
+        }
+    }
 
     // File drop callback
     glfwSetWindowUserPointer(window_, this);

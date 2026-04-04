@@ -182,6 +182,7 @@ elseif(WIN32)
         src/audio/AudioPlayer_windows.cpp
         src/media/MediaController_windows.cpp
         src/platform/ScreenCapture_windows.cpp
+        assets/yip_os.rc
     )
 endif()
 
