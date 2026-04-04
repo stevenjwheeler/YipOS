@@ -144,15 +144,8 @@ void DMPairScreen::StartQRRender() {
     constexpr int OFF = QRGen::OFFSET;
     constexpr int SZ = QRGen::SIZE;
 
-    // 1-pixel dark margin around QR (matches periodic refresh path)
-    for (int i = OFF - 1; i <= OFF + SZ; i++) {
-        display_.WriteChar(i, OFF - 1, 0);
-        display_.WriteChar(i, OFF + SZ, 0);
-        display_.WriteChar(OFF - 1, i, 0);
-        display_.WriteChar(OFF + SZ, i, 0);
-    }
-
-    // All QR modules: dark=0, light=255
+    // QR modules only. The template stamp (macro 37) already provides a
+    // 5-module light quiet zone around the 21×21 area — don't overwrite it.
     for (int r = 0; r < SZ; r++) {
         for (int c = 0; c < SZ; c++) {
             display_.WriteChar(c + OFF, r + OFF, matrix[r][c] ? 0 : 255);
@@ -161,7 +154,7 @@ void DMPairScreen::StartQRRender() {
 
     qr_rendering_ = true;
     skip_clock = true;
-    int writes = SZ * SZ + 4 * (SZ + 2);
+    int writes = SZ * SZ;
     Logger::Info("DMPair: QR render started (" +
                  std::to_string(writes) + " module writes)");
 }
@@ -378,14 +371,7 @@ void DMPairScreen::Update() {
                 constexpr int OFF = QRGen::OFFSET;
                 constexpr int SZ = QRGen::SIZE;
 
-                // 1-pixel dark margin around QR (quiet zone repair)
-                for (int i = OFF - 1; i <= OFF + SZ; i++) {
-                    display_.WriteChar(i, OFF - 1, 0);
-                    display_.WriteChar(i, OFF + SZ, 0);
-                    display_.WriteChar(OFF - 1, i, 0);
-                    display_.WriteChar(OFF + SZ, i, 0);
-                }
-
+                // QR modules only — quiet zone comes from the template stamp.
                 // All QR modules: dark=0, light=255
                 for (int r = 0; r < SZ; r++) {
                     for (int c = 0; c < SZ; c++) {
