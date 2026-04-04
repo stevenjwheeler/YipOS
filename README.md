@@ -55,7 +55,7 @@ None of the logical operation of the device actually happens in an animation con
 - **Autolock** to prevent accidental inputs
 - **PC speaker** beep on input (customizable or mutable)
 - **OSCQuery** for automatic service discovery--no manual port configuration needed
-- **79-page** period-accurate [operator's manual](yip_os/docs/latex/Yip-Boi%20Operator's%20Manual%20v1.0.pdf)
+- **100+ page** period-accurate [operator's manual](yip_os/docs/latex/manual.pdf)
 
 ## Programs
 
@@ -76,6 +76,10 @@ Yip OS comes with a home screen filled with programs that are designed to be use
 | **MEDIA** | Now-playing display with playback controls |
 | **BFI** | BrainFlow EEG parameter graphing (via ChilloutCharles' [BFiVRC](https://github.com/ChilloutCharles/BrainflowsIntoVRChat)) |
 | **CHAT** | Live Telegram group chat for Yip-Boi owners (read in-game, post using your existing device)|
+| **TWTCH** | Live Twitch chat viewer (anonymous IRC, no account required) |
+| **STONK** | Stock and crypto ticker with configurable watchlist |
+| **INTRP** | Live interpreter -- local Whisper transcription + CTranslate2/NLLB translation (CPU or CUDA) |
+| **DM** | Peer-to-peer direct messages, QR-paired in VRChat via camera capture |
 | **LOCK** | Screen lock -- tap SEL three times to unlock |
 
 <table>
@@ -118,9 +122,9 @@ You need a compatible avatar. You can use the Yip-Boi avatar prefab, available o
 7. VRChat will discover Yip OS via OSCQuery and establish a connection
 8. The PDA display will begin rendering
 
-> **Note:** The Williams Tube rendering method requires **27 bits of parameter space**. This is fairly heavy for an asset, and you may want to make a version of your avatar that sacrifices some of your other heavy assets.
+> **Note:** The Williams Tube rendering method requires **28 bits of parameter space**. This is fairly heavy for an asset, and you may want to make a version of your avatar that sacrifices some of your other heavy assets.
 
-For testing in Unity without uploading, see the [Operator's Manual](yip_os/docs/latex/Yip-Boi%20Operator's%20Manual%20v1.0.pdf) on Play Mode testing with the included OSC scripts.
+For testing in Unity without uploading, see the [Operator's Manual](yip_os/docs/latex/manual.pdf) on Play Mode testing with the included OSC scripts.
 
 ## Building From Source
 
@@ -165,9 +169,17 @@ Depending on what features you enable, this device will display and allow intera
 
 Depending on your interaction settings, other users may also be able to interact with the device -- they could cycle through your friends in VRCX, go through your list of recent avatars and make you change, or toggle things on and off on your avatar.
 
-To combat this, **VRCX, AVTR, and CHAT are disabled by default** and require you to manually enable them in the Yip OS desktop app with your actual mouse and keyboard.
+To combat this, **VRCX, AVTR, CHAT, TWTCH, INTRP, and DM are disabled by default** and require you to manually enable them in the Yip OS desktop app with your actual mouse and keyboard.
 
 ## Version History
+
+**1.1.3** - Build-time git hash, DM pairing audio cues (PulseAudio/PlaySound), DM pair screen macros, full QR self-heal refresh, shader normal guard for multi-avatar scenes, mDNS listen thread fix, manual refresh
+
+**1.1.2** - DM polish: compose screen (CC speech-to-text), session diagnostics/log tab, version+hash on boot screen, self-notification fix, QR refresh stability, macro stamps for all pair modes
+
+**1.1.1** - Windows feature parity (MeCab Japanese kanji→hiragana), CPU-only CTranslate2 build, three-installer pipeline, HEART OSC parameter docs, OSCQuery disable toggle, avatar CTRL parameter filter, Whisper bracketed-text stripping
+
+**1.1.0** - TWTCH Twitch chat viewer, INTRP live interpreter (Whisper + NLLB translation, CUDA support), STONK stock/crypto ticker, DM private messages (QR pairing via VRChat camera capture, Cloudflare Worker backend), extended character ROM (Bank 1, double-resolution atlases), MeCab integration, thread-safety refactor, ListScreen base class, UIManager split into per-tab files
 
 **1.0.0** - Initial release
 
@@ -179,7 +191,7 @@ To combat this, **VRCX, AVTR, and CHAT are disabled by default** and require you
 | Macro Atlas | 4096x4096 R Compressed BC4 UNorm |
 | Text Grid | 40 columns x 8 rows |
 | Character ROM | 256 glyphs (16x16 atlas) |
-| Synced Parameters | 27 bits |
+| Synced Parameters | 28 bits |
 | Write Speed | ~70ms per glyph |
 | Screen Transition | ~2-4 seconds (macro stamp + dynamic content) |
 
