@@ -6,7 +6,7 @@
 \documentclass[10pt]{article}
 
 % --- Manual version (used in title page and back cover) ---
-\newcommand{\manualversion}{1.1}
+\newcommand{\manualversion}{1.1.3}
 
 % --- Page geometry: wide landscape-ish spiral-bound notebook ---
 % Target ~8.5 x 5.5" (half-letter, landscape feel)
@@ -627,7 +627,7 @@ Yip OS boots into the Home screen after displaying a brief boot graphic. The Hom
   \toprule
   & \textbf{Col 1} & \textbf{Col 2} & \textbf{Col 3} & \textbf{Col 4} & \textbf{Col 5} \\
   \midrule
-  \textbf{Row 1} & DBG & ----- & INTRP & ----- & DM \\[0.3em]
+  \textbf{Row 1} & DBG & TWTCH & INTRP & ----- & DM \\[0.3em]
   \textbf{Row 2} & ----- & ----- & ----- & ----- & ----- \\
   \textbf{Row 3} & ----- & ----- & ----- & ----- & ----- \\
   \bottomrule
@@ -1063,6 +1063,25 @@ Messages are displayed in a scrollable list. Use \key{JOYSTICK} to move through 
 When new messages arrive, a notification dot ($\bullet$) appears in the status bar and an \texttt{*} appears next to CHAT on the Home screen. If you're already viewing the message list, \textbf{(NEW MSG)} appears in the top-left corner.
 
 The background poll rate for checking new messages is configurable via \textbf{CHATBG} in the CONF program (see Section~\ref{sec:conf}). Options are OFF, 30S, 1M, and 5M.
+
+\newpage
+\subsection{TWTCH --- Twitch Chat Viewer}
+\label{sec:twtch}
+
+A live, read-only viewer for any public Twitch channel's chat. Yip OS connects directly to Twitch IRC as an anonymous viewer --- no Twitch account, OAuth token, or API key is required.
+
+Configure the channel in the desktop app's \textbf{Twitch} tab: tick \textbf{Enable Twitch}, enter a channel name (without the \texttt{\#}, e.g. \texttt{foxipso}), and click \textbf{Apply}. The client connects to \texttt{irc.chat.twitch.tv} and joins \texttt{\#channel}. Connection status (\textbf{Connected}, \textbf{Connecting...}, \textbf{Disabled}) and the current message count are displayed in the tab.
+
+On the PDA, launch TWTCH from Page 2 of the Home screen. The feed shows the most recent messages, newest first:
+
+\begin{description}[style=nextline, leftmargin=1em, font=\bfseries\ttfamily, nosep]
+  \item[Featured] The newest message is rendered large in the upper portion of the screen (rows 1--4), with the sender name and a relative timestamp.
+  \item[Older] Two more recent messages are shown single-row beneath the featured block.
+\end{description}
+
+Three messages are visible per page. Use \key{JOYSTICK} to move the selection cursor, \key{SEL} (TR) to view the full message in a detail screen, and \textbf{PG UP / PG DWN} (ML / BL) to page through history (up to 50 messages are retained).
+
+When new messages arrive, the feed auto-refreshes (rate-limited to prevent flicker). The IRC client automatically reconnects with exponential backoff if the connection drops.
 
 \newpage
 \subsection{TEXT --- Text Display}
