@@ -97,6 +97,10 @@ private:
     std::array<char, 64> twitch_channel_buf_ = {};
     bool twitch_channel_initialized_ = false;
 
+    // HEART custom OSC param
+    std::array<char, 64> heart_custom_param_buf_ = {};
+    bool heart_custom_param_initialized_ = false;
+
     // DM tab state
     std::array<char, 256> dm_endpoint_buf_ = {};
     bool dm_endpoint_initialized_ = false;

@@ -213,6 +213,20 @@ std::string WhisperWorker::PopCommitted() {
     return t;
 }
 
+void WhisperWorker::ClearCommitted() {
+    {
+        std::lock_guard<std::mutex> lock(text_mutex_);
+        std::queue<std::string> empty;
+        committed_queue_.swap(empty);
+        latest_text_.clear();
+    }
+    {
+        std::lock_guard<std::mutex> t(tentative_mutex_);
+        tentative_text_.clear();
+    }
+    tentative_version_.fetch_add(1);
+}
+
 std::string WhisperWorker::GetTentative() const {
     std::lock_guard<std::mutex> lock(tentative_mutex_);
     return tentative_text_;

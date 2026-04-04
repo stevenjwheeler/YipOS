@@ -31,6 +31,8 @@ DMComposeScreen::DMComposeScreen(PDAController& pda) : Screen(pda) {
     } else {
         macro_index = -1;  // dynamic render for "not configured" message
     }
+    Logger::Info(std::string("DMCompose: cc_available=") + (cc_available_ ? "yes" : "no") +
+                 ", macro_index=" + std::to_string(macro_index));
 }
 
 DMComposeScreen::~DMComposeScreen() {
@@ -275,6 +277,7 @@ bool DMComposeScreen::OnInput(const std::string& key) {
 
     // CLEAR — contact 13 (col 1, row 3)
     if (key == "13") {
+        if (auto* w = pda_.GetWhisperWorker()) w->ClearCommitted();
         compose_buffer_.clear();
         RedrawText();
         return true;

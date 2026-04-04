@@ -123,24 +123,47 @@ void DMPairScreen::StartQRRender() {
         return;
     }
 
-    // Clear + stamp template + write data modules (same as QRTestScreen)
+    // Clear + stamp template (gives us finders/timing as fast background)
     display_.ClearScreen();
     display_.SetMacroMode();
     display_.StampMacro(QR_TEMPLATE_MACRO);
+
+    // Write the manual-entry code first so it's visible during the slow QR draw
+    display_.SetTextMode();
+    WriteCodeOverlay();
 
     display_.SetBitmapMode();
     display_.SetWriteDelay(0.07f);  // SLOW mode
     display_.BeginBuffered();
 
-    auto& modules = qr.GetLightModules();
-    for (auto& mod : modules) {
-        display_.WriteChar(mod.col, mod.row, 255);  // VQ_WHITE
+    // Write ALL modules (dark + light) for the actual payload.  The template's
+    // format-info bits correspond to a *different* payload's mask pattern and
+    // would otherwise make the QR undecodable — overwriting them here guarantees
+    // the QR matches what QRGen::EvaluateMask() chose.
+    auto& matrix = qr.GetMatrix();
+    constexpr int OFF = QRGen::OFFSET;
+    constexpr int SZ = QRGen::SIZE;
+
+    // 1-pixel dark margin around QR (matches periodic refresh path)
+    for (int i = OFF - 1; i <= OFF + SZ; i++) {
+        display_.WriteChar(i, OFF - 1, 0);
+        display_.WriteChar(i, OFF + SZ, 0);
+        display_.WriteChar(OFF - 1, i, 0);
+        display_.WriteChar(OFF + SZ, i, 0);
+    }
+
+    // All QR modules: dark=0, light=255
+    for (int r = 0; r < SZ; r++) {
+        for (int c = 0; c < SZ; c++) {
+            display_.WriteChar(c + OFF, r + OFF, matrix[r][c] ? 0 : 255);
+        }
     }
 
     qr_rendering_ = true;
     skip_clock = true;
+    int writes = SZ * SZ + 4 * (SZ + 2);
     Logger::Info("DMPair: QR render started (" +
-                 std::to_string(modules.size()) + " data writes)");
+                 std::to_string(writes) + " module writes)");
 }
 
 void DMPairScreen::RequestRender() {

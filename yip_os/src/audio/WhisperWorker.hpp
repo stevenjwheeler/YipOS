@@ -32,6 +32,7 @@ public:
     // Committed text (consumed once, FIFO)
     bool HasCommitted() const;
     std::string PopCommitted();
+    void ClearCommitted();  // drop all queued committed text + current tentative
 
     // Tentative text (single slot, overwritten each progressive step)
     std::string GetTentative() const;

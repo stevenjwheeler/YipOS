@@ -120,6 +120,40 @@ void UIManager::RenderOSCTab(PDAController& pda, Config& config, OSCManager& osc
     ImGui::TextDisabled("Sends current slider value every second");
     // Auto HR tick runs in TickSimulations() so it works when tab is hidden
 
+    // HEART listens for these params (matched on final path segment)
+    ImGui::Spacing();
+    ImGui::TextDisabled("HEART listens on these OSC param names (final path segment):");
+    ImGui::BulletText("Int 0-255 BPM: HR, Heartrate3, HeartRateInt");
+    ImGui::BulletText("Float -1..1: Heartrate, HeartRateFloat, FullHRPercent");
+
+    // Custom param input
+    ImGui::Spacing();
+    ImGui::Text("Custom Param");
+    ImGui::TextDisabled("Avatar parameter name to also listen to (just the name, no path).");
+
+    if (!heart_custom_param_initialized_) {
+        std::string p = config.GetState("heart.custom_param");
+        std::snprintf(heart_custom_param_buf_.data(), heart_custom_param_buf_.size(), "%s", p.c_str());
+        heart_custom_param_initialized_ = true;
+    }
+    ImGui::SetNextItemWidth(200);
+    ImGui::InputText("##heart_custom", heart_custom_param_buf_.data(), heart_custom_param_buf_.size());
+    ImGui::SameLine();
+    static int heart_type_idx = (config.GetState("heart.custom_param_type", "int") == "float") ? 1 : 0;
+    const char* heart_types[] = { "Int 0-255", "Float -1..1" };
+    ImGui::SetNextItemWidth(120);
+    if (ImGui::Combo("##heart_type", &heart_type_idx, heart_types, 2)) {
+        config.SetState("heart.custom_param_type", heart_type_idx == 1 ? "float" : "int");
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Apply##heart")) {
+        std::string name(heart_custom_param_buf_.data());
+        while (!name.empty() && name.front() == ' ') name.erase(name.begin());
+        while (!name.empty() && name.back() == ' ') name.pop_back();
+        if (!name.empty() && name[0] == '/') name.erase(name.begin());
+        config.SetState("heart.custom_param", name);
+    }
+
     // --- BFI ---
     ImGui::Spacing();
     ImGui::Text("BFI (BrainFlowsIntoVRChat) — %d params", BFI_PARAM_COUNT);

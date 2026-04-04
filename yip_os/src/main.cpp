@@ -227,6 +227,17 @@ int main(int argc, char* argv[]) {
                         int bpm = static_cast<int>((value + 1.0f) * 127.5f);
                         if (bpm > 0 && bpm < 256) pda.SetHeartRate(bpm);
                     }
+                    // User-configured custom param
+                    else {
+                        std::string custom = pda.GetConfig().GetState("heart.custom_param");
+                        if (!custom.empty() && param == custom) {
+                            bool is_float = (pda.GetConfig().GetState("heart.custom_param_type", "int") == "float");
+                            int bpm = is_float
+                                ? static_cast<int>((value + 1.0f) * 127.5f)
+                                : static_cast<int>(value);
+                            if (bpm > 0 && bpm < 256) pda.SetHeartRate(bpm);
+                        }
+                    }
                 }
             }
             // BFI (BrainFlowsIntoVRChat) params

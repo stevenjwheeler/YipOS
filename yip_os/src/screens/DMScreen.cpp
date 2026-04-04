@@ -14,6 +14,7 @@ DMScreen::DMScreen(PDAController& pda) : ListScreen(pda) {
     name = "CONVOS";
     macro_index = 38;
     update_interval = 5.0f;
+    refresh_interval = 120.0f;  // healing re-stamp every 2min, not the noisy 30s default
     // Fetch fresh data immediately so new sessions appear without waiting for poll timer
     pda_.GetDMClient().PollAll();
     pda_.MarkDMSeen();
