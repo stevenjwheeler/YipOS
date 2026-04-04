@@ -159,8 +159,31 @@ void DMComposeScreen::RenderDynamic() {
         display_.WriteText(5, 1, label);
     }
 
-    if (cc_available_) {
+    if (cc_available_ && compose_buffer_.empty()) {
         display_.WriteText(1, 2, "Listening...");
+    }
+
+    // STOP/GO label
+    UpdateButtonLabel();
+
+    // Committed text (word-wrapped, last N lines)
+    if (!compose_buffer_.empty()) {
+        std::vector<std::string> committed_lines;
+        WordWrap(compose_buffer_, committed_lines);
+
+        int total_rows = TEXT_LAST_ROW - TEXT_FIRST_ROW + 1;
+        int skip = static_cast<int>(committed_lines.size()) > total_rows
+                       ? static_cast<int>(committed_lines.size()) - total_rows
+                       : 0;
+        int row = TEXT_FIRST_ROW;
+        for (int i = skip; i < static_cast<int>(committed_lines.size()); i++) {
+            if (row > TEXT_LAST_ROW) break;
+            auto& line = committed_lines[i];
+            for (int c = 0; c < static_cast<int>(line.size()) && c < LINE_WIDTH; c++) {
+                display_.WriteChar(1 + c, row, static_cast<int>(line[c]));
+            }
+            row++;
+        }
     }
 
     RenderClock();
@@ -168,40 +191,11 @@ void DMComposeScreen::RenderDynamic() {
 }
 
 void DMComposeScreen::RedrawText() {
-    // Re-stamp the macro to clear the text area in one shot, then overlay
-    // only the committed text.  Much faster than writing 38 spaces per row.
-    display_.SetMacroMode();
-    display_.StampMacro(COMPOSE_MACRO);
-    display_.SetTextMode();
-
-    // Re-render dynamic parts that the macro doesn't contain
-    RenderDynamic();
-
-    // Re-apply the current STOP/GO label
-    UpdateButtonLabel();
-
-    // Build committed lines
-    std::vector<std::string> committed_lines;
-    if (!compose_buffer_.empty()) {
-        WordWrap(compose_buffer_, committed_lines);
-    }
-
-    int total_rows = TEXT_LAST_ROW - TEXT_FIRST_ROW + 1; // 4 rows
-
-    // Take the last N lines that fit
-    int skip = static_cast<int>(committed_lines.size()) > total_rows
-                   ? static_cast<int>(committed_lines.size()) - total_rows
-                   : 0;
-
-    int row = TEXT_FIRST_ROW;
-    for (int i = skip; i < static_cast<int>(committed_lines.size()); i++) {
-        if (row > TEXT_LAST_ROW) break;
-        auto& line = committed_lines[i];
-        for (int c = 0; c < static_cast<int>(line.size()) && c < LINE_WIDTH; c++) {
-            display_.WriteChar(1 + c, row, static_cast<int>(line[c]));
-        }
-        row++;
-    }
+    // Defer to the controller's normal render path: CancelBuffered → ClearScreen
+    // → macro stamp → SetTextMode → BeginBuffered → RenderDynamic().  Using the
+    // same flow as every other screen avoids the mode-transition race that
+    // produced off-center write-head flashes when we stamped inline.
+    pda_.StartRender(this);
 }
 
 void DMComposeScreen::UpdateButtonLabel() {
@@ -240,6 +234,7 @@ void DMComposeScreen::Update() {
             }
             // ERROR: clear flash, stay on screen
             flash_ = FlashState::NONE;
+            macro_index = COMPOSE_MACRO;  // restore (SEND path cleared it)
             needs_redraw_ = true;
         }
         return;  // don't update text while flashing
