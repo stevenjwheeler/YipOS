@@ -16,8 +16,8 @@ const MAX_MESSAGE_LEN = 280;     // extended tweet-length
 const MAX_NAME_LEN = 20;
 const MAX_ID_LEN = 64;
 const MAX_BODY_BYTES = 4096;     // reject request bodies larger than this
-const MAX_CREATES_PER_DAY = 5;
-const MAX_JOINS_PER_WINDOW = 5;
+const MAX_CREATES_PER_DAY = 10;
+const MAX_JOINS_PER_WINDOW = 10;
 const MAX_SENDS_PER_SESSION_DAY = 100;
 
 const CORS_HEADERS = {

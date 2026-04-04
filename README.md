@@ -79,7 +79,7 @@ Yip OS comes with a home screen filled with programs that are designed to be use
 | **TWTCH** | Live Twitch chat viewer (anonymous IRC, no account required) |
 | **STONK** | Stock and crypto ticker with configurable watchlist |
 | **INTRP** | Live interpreter -- Whisper transcription (Vulkan or CPU) + CTranslate2/NLLB translation (CUDA 12.x or CPU); uses Bank 1 glyph ROM to render foreign characters on-screen |
-| **DM** | Peer-to-peer direct messages, QR-paired in VRChat via camera capture |
+| **DM** | Peer-to-peer direct messages, QR-paired in VRChat via camera capture (see rate limits below) |
 | **LOCK** | Screen lock -- tap SEL three times to unlock |
 
 <table>
@@ -174,6 +174,16 @@ Depending on what features you enable, this device will display and allow intera
 Depending on your interaction settings, other users may also be able to interact with the device -- they could cycle through your friends in VRCX, go through your list of recent avatars and make you change, or toggle things on and off on your avatar.
 
 To combat this, **VRCX, AVTR, CHAT, TWTCH, INTRP, and DM are disabled by default** and require you to manually enable them in the Yip OS desktop app with your actual mouse and keyboard.
+
+### DM Pairing and Rate Limits
+
+DM uses a small Cloudflare Worker (+ KV) as a relay. To prevent abuse, the backend applies these per-IP caps:
+
+- **10 pairing codes generated per 24 hours** (rolling 24h window per IP)
+- **10 code-join attempts per 5 minutes** (rolling 5-minute window per IP — guards against brute-forcing the 6-digit code)
+- **100 messages sent per session per 24 hours**
+
+Pairing codes themselves expire **5 minutes** after creation. Session data and message history are deleted server-side after **30 days** of inactivity.
 
 ## Version History
 

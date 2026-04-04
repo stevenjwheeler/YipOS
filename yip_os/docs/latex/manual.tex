@@ -1251,7 +1251,15 @@ Sessions can be managed in the \textbf{DM} tab of the desktop companion app:
   \item \textbf{Each device has a unique anonymous ID} generated on first launch and stored locally. This ID is used to authenticate with the server --- it is not tied to your VRChat account or any other identity.
 \end{itemize}
 
-\noindent Your IP address is sent to and stored by Cloudflare as part of normal HTTPS/TCP transmission and for the purpose of rate limiting.
+\noindent Your IP address is sent to and stored by Cloudflare as part of normal HTTPS/TCP transmission and for the purpose of rate limiting. The following per-IP caps apply to prevent abuse:
+
+\begin{itemize}[leftmargin=2em, nosep]
+  \item \textbf{10 pairing codes generated per 24~hours} (resets on a rolling 24h window per IP).
+  \item \textbf{10 code-join attempts per 5~minutes} (resets on a rolling 5-minute window per IP) --- guards against brute-force guessing of 6-digit codes.
+  \item \textbf{100 messages sent per session per 24~hours}.
+\end{itemize}
+
+\noindent Pairing codes themselves expire \textbf{5~minutes} after creation. If you hit a rate limit you will see an error message --- wait for the window to reset, then try again.
 
 Messages are stored in Cloudflare's KV cache for 30 days and then automatically purged. Message contents are anonymized by a random UUID but are associated with the screen name you set at pairing time. Any user can set any screen name --- if you pair with ``USER~A'' but they've set their screen name to some other VRChat username ``USER~B'', it is up to you to understand and remember that you're communicating with ``USER~A''. (If they change their name after pairing, you'll still see their old screen name.)
 
