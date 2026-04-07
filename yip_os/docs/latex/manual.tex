@@ -818,6 +818,14 @@ The transcription model runs entirely on your local machine --- no audio is sent
 
 Due to the CRT's standard ASCII character set, all transcription output is \textbf{automatically translated to English}. Non-English speech is translated in real time; English speech passes through unchanged. This means CC functions as both a captioning and a live translation tool. For full bilingual translation with accented characters and Japanese kana support, see the \textbf{INTRP} interpreter program (Section~\ref{sec:intrp}).
 
+\subsubsection{VRChat Chatbox Relay}
+
+CC can forward live captions to your \textbf{VRChat chatbox} via OSC, so other players see your transcribed speech as floating chatbox text above your head.
+
+Press \textbf{SEL} on the CC screen to toggle the relay on or off. When active, a \textbf{\textrightarrow} arrow indicator appears on the right border of the display (top-right corner, near the SEL button). Captions are batched and sent every 3~seconds to avoid spamming the chatbox. The relay can also be toggled from the desktop app's CC tab via the ``Send captions to chatbox'' checkbox.
+
+When the relay is turned off --- either by pressing SEL again or by leaving the CC screen (BACK) --- the VRChat chatbox is automatically cleared.
+
 \subsubsection{Model Installation}
 
 CC requires a GGML-format Whisper.cpp model. Download one from:

@@ -69,7 +69,7 @@ Yip OS comes with a home screen filled with programs that are designed to be use
 | **SPVR** | [StayPutVR](https://github.com/InconsolableCellist/StayPutVR) integration--lock/unlock tracked devices from your wrist |
 | **CONF** | System configuration (boot speed, write delay, debounce, autolock, etc.) |
 | **VRCX** | Read-only VRCX database integration--friend activity, world history, notifications |
-| **CC** | Live closed captions (mic or system audio) via local Whisper AI transcription with Vulkan GPU acceleration (AMD/NVIDIA) or CPU fallback -- no audio sent externally |
+| **CC** | Live closed captions (mic or system audio) via local Whisper AI transcription with Vulkan GPU acceleration (AMD/NVIDIA) or CPU fallback -- no audio sent externally. Optional VRChat chatbox relay (SEL to toggle) forwards captions to your chatbox via OSC |
 | **AVTR** | Avatar switching and toggle control via OSC |
 | **IMG** | Bitmap image display--renders arbitrary images character-by-character |
 | **TEXT** | Arbitrary text display, with optional VRChat ChatBox input |

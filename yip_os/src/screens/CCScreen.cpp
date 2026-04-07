@@ -5,6 +5,8 @@
 #include "audio/WhisperWorker.hpp"
 #include "core/Config.hpp"
 #include "core/Logger.hpp"
+#include "core/TimeUtil.hpp"
+#include "net/OSCManager.hpp"
 
 namespace YipOS {
 
@@ -21,11 +23,21 @@ CCScreen::CCScreen(PDAController& pda) : Screen(pda) {
         s = std::string(LINE_WIDTH, ' ');
     }
 
+    // Restore chatbox relay state
+    chatbox_relay_ = pda_.GetConfig().GetState("cc.chatbox_relay") == "1";
+
     // Auto-start CC on screen entry
     StartCC();
 }
 
 CCScreen::~CCScreen() {
+    // Clear VRChat chatbox if relay was active
+    if (chatbox_relay_) {
+        auto* osc = pda_.GetOSCManager();
+        if (osc && osc->IsRunning()) {
+            osc->SendChatbox("", true);
+        }
+    }
     // Auto-stop if we started it
     if (started_by_screen_) {
         StopCC();
@@ -163,6 +175,11 @@ void CCScreen::Render() {
         }
     }
 
+    // Chatbox relay indicator (persisted across screen entries)
+    if (chatbox_relay_) {
+        display_.WriteGlyph(COLS - 1, 1, G_RIGHT_A);
+    }
+
     // CONF button on row 6 (touch 53 area)
     WriteInverted(COLS - 1 - 4, 6, "CONF");
 
@@ -180,6 +197,14 @@ void CCScreen::RenderDynamic() {
 void CCScreen::Update() {
     auto* whisper = pda_.GetWhisperWorker();
     if (!whisper) return;
+
+    // Sync chatbox relay state with config (ImGui may have changed it)
+    bool cfg_relay = pda_.GetConfig().GetState("cc.chatbox_relay") == "1";
+    if (cfg_relay != chatbox_relay_) {
+        chatbox_relay_ = cfg_relay;
+        if (!chatbox_relay_) chatbox_buffer_.clear();
+        UpdateRelayIndicator();
+    }
 
     bool tentative_enabled = IsTentativeEnabled();
 
@@ -204,9 +229,34 @@ void CCScreen::Update() {
                     " pending=" + std::to_string(pending_lines_.size()) +
                     " \"" + text.substr(0, 50) + "\"");
 
+        // Accumulate for chatbox relay
+        if (chatbox_relay_) {
+            if (!chatbox_buffer_.empty() && chatbox_buffer_.back() != ' ')
+                chatbox_buffer_ += ' ';
+            chatbox_buffer_ += text;
+            if (static_cast<int>(chatbox_buffer_.size()) > CHATBOX_MAX_LEN)
+                chatbox_buffer_ = chatbox_buffer_.substr(
+                    chatbox_buffer_.size() - CHATBOX_MAX_LEN);
+        }
+
         // Drop oldest lines if too many pending (keep newest)
         while (pending_lines_.size() > MAX_PENDING_LINES) {
             pending_lines_.erase(pending_lines_.begin());
+        }
+    }
+
+    // Periodic chatbox send
+    if (chatbox_relay_ && !chatbox_buffer_.empty()) {
+        double now = MonotonicNow();
+        if (now - last_chatbox_send_ >= CHATBOX_INTERVAL) {
+            auto* osc = pda_.GetOSCManager();
+            if (osc && osc->IsRunning()) {
+                osc->SendChatbox(chatbox_buffer_, true);
+                Logger::Debug("CC: chatbox relay sent " +
+                              std::to_string(chatbox_buffer_.size()) + " chars");
+            }
+            chatbox_buffer_.clear();
+            last_chatbox_send_ = now;
         }
     }
 
@@ -315,9 +365,33 @@ void CCScreen::WriteInverted(int col, int row, const std::string& text) {
     }
 }
 
+void CCScreen::UpdateRelayIndicator() {
+    if (chatbox_relay_) {
+        display_.WriteGlyph(COLS - 1, 1, G_RIGHT_A);
+    } else {
+        display_.WriteGlyph(COLS - 1, 1, G_VLINE);
+    }
+}
+
 bool CCScreen::OnInput(const std::string& key) {
     if (key == "52" || key == "53") {
         pda_.SetPendingNavigate("CC_CONF");
+        return true;
+    }
+    // SEL: toggle VRChat chatbox relay
+    if (key == "TR") {
+        chatbox_relay_ = !chatbox_relay_;
+        if (!chatbox_relay_) {
+            chatbox_buffer_.clear();
+            auto* osc = pda_.GetOSCManager();
+            if (osc && osc->IsRunning()) {
+                osc->SendChatbox("", true);
+            }
+        }
+        pda_.GetConfig().SetState("cc.chatbox_relay", chatbox_relay_ ? "1" : "0");
+        display_.BeginBuffered();
+        UpdateRelayIndicator();
+        Logger::Info(std::string("CC: chatbox relay ") + (chatbox_relay_ ? "ON" : "OFF"));
         return true;
     }
     return false;

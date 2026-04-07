@@ -199,6 +199,16 @@ void UIManager::RenderCCTab(PDAController& pda, Config& config) {
         ImGui::TextDisabled("CC normally stops automatically when you leave the CC screen.");
     }
 
+    // VRChat chatbox relay
+    ImGui::Separator();
+    ImGui::Text("VRChat Chatbox");
+    bool relay = config.GetState("cc.chatbox_relay") == "1";
+    if (ImGui::Checkbox("Send captions to chatbox", &relay)) {
+        config.SetState("cc.chatbox_relay", relay ? "1" : "0");
+    }
+    ImGui::TextDisabled("Forwards CC text to VRChat chatbox via OSC every 3 seconds.");
+    ImGui::TextDisabled("Toggle in-game with SEL on the CC screen.");
+
     // Latest text preview
     std::string latest = whisper->PeekLatest();
     if (!latest.empty()) {

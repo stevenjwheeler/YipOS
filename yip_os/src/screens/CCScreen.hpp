@@ -54,6 +54,14 @@ private:
     static constexpr float ULTRA_WRITE_DELAY = 0.025f;
 
     bool started_by_screen_ = false;
+
+    // VRChat chatbox relay
+    bool chatbox_relay_ = false;
+    std::string chatbox_buffer_;
+    double last_chatbox_send_ = 0;
+    static constexpr double CHATBOX_INTERVAL = 3.0;
+    static constexpr int CHATBOX_MAX_LEN = 144;
+    void UpdateRelayIndicator();
 };
 
 } // namespace YipOS
