@@ -20,7 +20,7 @@ void UIManager::RenderStatusTab(PDAController& pda, OSCManager& osc) {
     ImGui::TextColored(ImVec4(0.2f, 1.0f, 0.4f, 1.0f), "%s", header.c_str());
     ImGui::SameLine();
     ImGui::TextDisabled("(C) Foxipso 2026");
-    ImGui::TextDisabled("Enable the PDA and Williams Tube in VRChat to see the output!");
+    ImGui::TextDisabled("Enable the PDA in VRChat to see the output!");
     ImGui::Text("OS: Up and running");
     ImGui::Separator();
 
