@@ -187,13 +187,27 @@ Pairing codes themselves expire **5 minutes** after creation. Session data and m
 
 ## Version History
 
-**1.1.3** - Build-time git hash, DM pairing audio cues (PulseAudio/PlaySound), DM pair screen macros, full QR self-heal refresh, shader normal guard for multi-avatar scenes, mDNS listen thread fix, manual refresh
+**1.1.3** (April 7, 2026)
+- **Interpreter Program (INTRP)** — live Whisper transcription + NLLB translation (CUDA 12.x or CPU)
+- **Foreign language support** for CC and INTRP — French, Italian, Spanish, German, Japanese; fully local, no audio or text sent externally
+- **Direct Message (DM)** — peer-to-peer private messaging, QR-paired in VRChat via camera capture
+- **CC chatbox sync** — press SEL to relay closed captions to your VRChat chatbox via OSC
+- **Twitch chat (TWTCH)** — read-only live Twitch chat viewer (anonymous IRC, no account required)
+- **HEART manual parameter selection** — custom OSC param name + int/float type in the desktop UI
+- **STONK** — stock and crypto ticker with configurable watchlist
+- Bug fixes and polish (QR scanner aspect correction, Whisper queue drain on CLEAR, DM refresh cadence, app icon)
+
+<details><summary>Detailed per-release changelog (1.1.0–1.1.3)</summary>
+
+**1.1.3** - Build-time git hash, DM pairing audio cues (PulseAudio/PlaySound), DM pair screen macros, full QR self-heal refresh, shader normal guard for multi-avatar scenes, mDNS listen thread fix, manual refresh, QR scanner multi-aspect retry, HEART custom OSC param, WhisperWorker ClearCommitted, DM refresh interval fix, app icon
 
 **1.1.2** - DM polish: compose screen (CC speech-to-text), session diagnostics/log tab, version+hash on boot screen, self-notification fix, QR refresh stability, macro stamps for all pair modes
 
 **1.1.1** - Windows feature parity (MeCab Japanese kanji→hiragana), CPU-only CTranslate2 build, three-installer pipeline, HEART OSC parameter docs, OSCQuery disable toggle, avatar CTRL parameter filter, Whisper bracketed-text stripping
 
 **1.1.0** - TWTCH Twitch chat viewer, INTRP live interpreter (Whisper + NLLB translation, CUDA support), STONK stock/crypto ticker, DM private messages (QR pairing via VRChat camera capture, Cloudflare Worker backend), extended character ROM (Bank 1, double-resolution atlases), MeCab integration, thread-safety refactor, ListScreen base class, UIManager split into per-tab files
+
+</details>
 
 **1.0.0** - Initial release
 
