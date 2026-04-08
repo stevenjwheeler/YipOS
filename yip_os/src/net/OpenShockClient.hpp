@@ -1,9 +1,11 @@
 /**
- * OpenShockClient.cpp
+ * OpenShockClient.hpp
  * V1.0.0
  *
  * Adds OpenShock API integration to YipOS for remote control of OpenShock
- * devices By otter_oasis
+ * devices.
+ *
+ * By otter_oasis
  */
 
 #pragma once

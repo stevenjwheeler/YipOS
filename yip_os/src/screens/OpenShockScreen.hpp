@@ -1,5 +1,5 @@
 /**
- * OpenShockClient.cpp
+ * OpenShockScreen.cpp
  * V1.0.0
  *
  * Adds OpenShock API integration to YipOS for remote control of OpenShock
