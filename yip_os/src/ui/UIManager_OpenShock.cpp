@@ -24,8 +24,18 @@ void UIManager::RenderOpenShockTab(PDAController &pda, Config &config) {
   ImGui::Text("OpenShock Integration");
   ImGui::TextDisabled(
       "Drive your OpenShock devices directly from the Yip-Boi.");
+  ImGui::TextDisabled("Module by @otter_oasis.");
+
+  ImGui::Spacing();
+
+  ImGui::TextDisabled("Warning: Using shocking devices is at your own risk.");
+  ImGui::TextDisabled("Use responsibly and follow all safety guidelines.");
+  ImGui::TextDisabled(
+      "Remember: If other people can interact with your yip-boi, they can "
+      "control your shocks.");
 
   ImGui::Separator();
+  ImGui::Spacing();
 
   auto *client = pda.GetOpenShockClient();
   if (!client) {
@@ -36,6 +46,9 @@ void UIManager::RenderOpenShockTab(PDAController &pda, Config &config) {
 
   // Initialize buffer from config state
   if (!openshock_token_initialized_) {
+    std::string enabled = config.GetState("openshock.enabled", "0");
+    openshock_enabled_ = (enabled != "0");
+
     std::string token = config.GetState("openshock.token");
     std::snprintf(openshock_token_buf_.data(), openshock_token_buf_.size(),
                   "%s", token.c_str());
@@ -55,8 +68,13 @@ void UIManager::RenderOpenShockTab(PDAController &pda, Config &config) {
     openshock_token_initialized_ = true;
   }
 
+  ImGui::Checkbox("Enable OpenShock Integration", &openshock_enabled_);
+  ImGui::Spacing();
+
   // --- Status ---
-  if (!client->HasToken()) {
+  if (!openshock_enabled_) {
+    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Status: Disabled");
+  } else if (!client->HasToken()) {
     ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f),
                        "Status: Offline (no token)");
   } else if (client->IsTokenValid()) {
@@ -101,14 +119,19 @@ void UIManager::RenderOpenShockTab(PDAController &pda, Config &config) {
                     .base(),
                 token.end());
 
+    config.SetState("openshock.enabled", openshock_enabled_ ? "1" : "0");
     config.SetState("openshock.token", token);
     config.SetState("openshock.intensity_step",
                     std::to_string(openshock_intensity_step_));
     config.SetState("openshock.duration_step",
                     std::to_string(openshock_duration_step_));
 
-    client->SetToken(token);
-    client->FetchShockers();
+    if (openshock_enabled_) {
+      client->SetToken(token);
+      client->FetchShockers();
+    } else {
+      client->SetToken("");
+    }
 
     if (!config_path_.empty())
       config.SaveToFile(config_path_);

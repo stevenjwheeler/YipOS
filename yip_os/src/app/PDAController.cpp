@@ -101,10 +101,11 @@ PDAController::PDAController(PDADisplay& display, NetTracker& net_tracker, Confi
     // Initialize OpenShock client
     openshock_client_ = std::make_unique<OpenShockClient>();
     std::string os_token = config_.GetState("openshock.token");
-    if (!os_token.empty()) {
+    std::string os_enabled = config_.GetState("openshock.enabled", "0");
+    if (os_enabled != "0" && !os_token.empty()) {
         openshock_client_->SetToken(os_token);
+        openshock_client_->FetchShockers();
     }
-    openshock_client_->FetchShockers();
 
     // Push home screen as root
     auto home = std::make_unique<HomeScreen>(*this);

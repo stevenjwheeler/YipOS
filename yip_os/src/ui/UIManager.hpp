@@ -113,6 +113,7 @@ private:
     std::unordered_map<std::string, std::array<char, 256>> dm_compose_bufs_;
 
     // OpenShock tab state
+    bool openshock_enabled_ = false;
     std::array<char, 128> openshock_token_buf_ = {};
     bool openshock_token_initialized_ = false;
     float openshock_intensity_step_ = 2.5f;
