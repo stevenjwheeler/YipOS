@@ -12,6 +12,7 @@
 #include "net/TwitchClient.hpp"
 #include "media/MediaController.hpp"
 #include "platform/SystemStats.hpp"
+#include "net/OpenShockClient.hpp"
 #include "core/Glyphs.hpp"
 #include "core/Config.hpp"
 #include "core/Logger.hpp"
@@ -96,6 +97,14 @@ PDAController::PDAController(PDADisplay& display, NetTracker& net_tracker, Confi
             twitch_client_->Connect();
         }
     }
+
+    // Initialize OpenShock client
+    openshock_client_ = std::make_unique<OpenShockClient>();
+    std::string os_token = config_.GetState("openshock.token");
+    if (!os_token.empty()) {
+        openshock_client_->SetToken(os_token);
+    }
+    openshock_client_->FetchShockers();
 
     // Push home screen as root
     auto home = std::make_unique<HomeScreen>(*this);
