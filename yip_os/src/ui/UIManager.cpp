@@ -126,6 +126,14 @@ bool UIManager::ShouldClose() const {
     return window_ && glfwWindowShouldClose(window_);
 }
 
+bool UIManager::IsMinimized() const {
+    return window_ && glfwGetWindowAttrib(window_, GLFW_ICONIFIED);
+}
+
+void UIManager::PollEvents() {
+    glfwPollEvents();
+}
+
 
 void UIManager::BeginFrame() {
     glfwPollEvents();

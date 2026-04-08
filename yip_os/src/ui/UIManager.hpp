@@ -40,6 +40,8 @@ public:
     void SetAssetsPath(const std::string& path) { assets_path_ = path; }
     void SetDropCallback(std::function<void(const std::string&)> cb) { drop_callback_ = std::move(cb); }
     void SetInitialSize(int w, int h) { initial_width_ = w; initial_height_ = h; }
+    bool IsMinimized() const;
+    void PollEvents();  // process window events without rendering
     void SaveWindowSize(Config& config);
 
 private:

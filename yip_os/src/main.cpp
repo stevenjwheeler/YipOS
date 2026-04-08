@@ -361,15 +361,20 @@ int main(int argc, char* argv[]) {
                 pda.MaybeRefresh();
             }
 
-            // 6. Render ImGui
-            ui.BeginFrame();
-            ui.Render(pda, config, osc);
-            ui.EndFrame();
+            // 6. Render ImGui (skip when minimized — background work still runs)
+            bool minimized = ui.IsMinimized();
+            if (!minimized) {
+                ui.BeginFrame();
+                ui.Render(pda, config, osc);
+                ui.EndFrame();
+            } else {
+                ui.PollEvents(); // still process window events (restore, close)
+            }
 
-            // 7. Yield — vsync should handle frame pacing, but on some systems
-            // (Wayland, broken compositor) it's a no-op. Use 16ms (~60fps cap)
-            // as a safety floor so we don't burn 100% CPU when vsync fails.
-            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+            // 7. Yield — vsync handles frame pacing when visible. When minimized
+            // there's no swap to block on, so sleep longer to save CPU.
+            int sleep_ms = minimized ? 100 : 16;
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
         }
 
         // Shutdown — pop all screens first while workers are still alive
