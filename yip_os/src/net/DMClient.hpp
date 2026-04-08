@@ -95,6 +95,9 @@ public:
     PairInfo& GetPairInfo() { return pair_info_; }
     const PairInfo& GetPairInfo() const { return pair_info_; }
 
+    // Last HTTP status code from PostJSON (0 if network error)
+    int GetLastHttpCode() const { return last_http_code_; }
+
 private:
     std::string PostJSON(const std::string& path, const std::string& body);
     std::string Get(const std::string& url);
@@ -107,6 +110,7 @@ private:
     std::vector<DMSession> sessions_;
     PairInfo pair_info_;
     CURL* curl_ = nullptr;
+    int last_http_code_ = 0;
 };
 
 } // namespace YipOS

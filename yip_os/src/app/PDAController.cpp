@@ -7,6 +7,7 @@
 #include "net/VRCXData.hpp"
 #include "net/ChatClient.hpp"
 #include "net/DMClient.hpp"
+#include "audio/AudioPlayer.hpp"
 #include "net/StockClient.hpp"
 #include "net/TwitchClient.hpp"
 #include "media/MediaController.hpp"
@@ -69,6 +70,15 @@ PDAController::PDAController(PDADisplay& display, NetTracker& net_tracker, Confi
     dm_client_->SetDisplayName(config_.GetState("dm.display_name", "Yip User"));
     LoadDMSessions();
 
+    // Load DM notification sound
+    dm_notify_sound_ = std::make_unique<AudioPlayer>();
+    {
+        std::string vol_str = config_.GetState("dm.notify_volume", "0.3");
+        float vol = 0.3f;
+        try { vol = std::stof(vol_str); } catch (...) {}
+        dm_notify_sound_->SetVolume(vol);
+    }
+
     // Initialize media controller
     media_controller_ = MediaController::Create();
     if (media_controller_) media_controller_->Initialize();
@@ -93,6 +103,14 @@ PDAController::PDAController(PDADisplay& display, NetTracker& net_tracker, Confi
 }
 
 PDAController::~PDAController() = default;
+
+void PDAController::SetAssetsPath(const std::string& p) {
+    assets_path_ = p;
+    // Load DM notification sound now that the path is known
+    if (dm_notify_sound_) {
+        dm_notify_sound_->LoadOGG(assets_path_ + "/sounds/msgrcv.ogg");
+    }
+}
 
 Screen* PDAController::GetCurrentScreen() const {
     return screen_stack_.empty() ? nullptr : screen_stack_.back().get();
@@ -691,7 +709,17 @@ void PDAController::RefreshDMCache() {
     last_dm_check_ = now;
 
     dm_client_->PollAll();
+    bool was_unseen = has_unseen_dm_;
     has_unseen_dm_ = dm_client_->HasUnseen();
+
+    // Play notification sound on new unseen transition
+    if (has_unseen_dm_ && !was_unseen) {
+        if (config_.GetState("dm.notify_sound", "1") == "1" &&
+            dm_notify_sound_ && dm_notify_sound_->IsLoaded() &&
+            !dm_notify_sound_->IsPlaying()) {
+            dm_notify_sound_->Play();
+        }
+    }
 }
 
 void PDAController::MarkDMSeen() {

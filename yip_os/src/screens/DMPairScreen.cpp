@@ -415,7 +415,9 @@ void DMPairScreen::Update() {
                 }
             } else {
                 mode_ = Mode::FAILED;
-                error_ = "Invalid or expired code";
+                error_ = (pda_.GetDMClient().GetLastHttpCode() == 429)
+                    ? "Rate limited"
+                    : "Invalid or expired code";
                 if (AudioEnabled() && error_sound_.IsLoaded()) error_sound_.Play();
             }
             RequestRender();
@@ -511,7 +513,9 @@ bool DMPairScreen::OnInput(const std::string& key) {
                 mode_ = Mode::RENDERING_QR;
             } else {
                 mode_ = Mode::FAILED;
-                error_ = "Network error";
+                error_ = (pda_.GetDMClient().GetLastHttpCode() == 429)
+                    ? "Rate limited"
+                    : "Network error";
                 if (AudioEnabled() && error_sound_.IsLoaded()) error_sound_.Play();
             }
             RequestRender();

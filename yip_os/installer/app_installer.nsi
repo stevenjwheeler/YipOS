@@ -161,6 +161,10 @@ Section "Install"
     SetOutPath "$INSTDIR\assets\images"
     File /nonfatal "..\assets\images\*.*"
 
+    ; Notification sounds
+    SetOutPath "$INSTDIR\assets\sounds"
+    File /nonfatal "..\assets\sounds\*.*"
+
     ; Create AppData directories for models, logs, etc.
     CreateDirectory "$APPDATA\yip_os"
     CreateDirectory "$APPDATA\yip_os\models"
@@ -207,6 +211,7 @@ Section "Uninstall"
     Delete "$INSTDIR\assets\vq_codebook.npy"
     Delete "$INSTDIR\assets\yip_os_logo.png"
     RMDir /r "$INSTDIR\assets\images"
+    RMDir /r "$INSTDIR\assets\sounds"
     RMDir "$INSTDIR\assets"
     RMDir "$INSTDIR"
 

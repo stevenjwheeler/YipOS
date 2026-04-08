@@ -4,6 +4,8 @@
 #include <fstream>
 #include <cstring>
 
+#include "stb/stb_vorbis.c"
+
 namespace YipOS {
 
 AudioPlayer::~AudioPlayer() {
@@ -93,6 +95,30 @@ bool AudioPlayer::LoadWAV(const std::string& path) {
 
     sample_rate_ = fmt_rate;
     channels_ = fmt_channels;
+    Logger::Info("AudioPlayer: loaded " + path + " (" +
+                 std::to_string(sample_rate_) + "Hz, " +
+                 std::to_string(channels_) + "ch, " +
+                 std::to_string(samples_.size() / channels_ / sample_rate_) + "s)");
+    return true;
+}
+
+bool AudioPlayer::LoadOGG(const std::string& path) {
+    Stop();
+
+    int channels = 0, sample_rate = 0;
+    short* output = nullptr;
+    int sample_count = stb_vorbis_decode_filename(
+        path.c_str(), &channels, &sample_rate, &output);
+    if (sample_count <= 0 || !output) {
+        Logger::Warning("AudioPlayer: cannot decode OGG: " + path);
+        return false;
+    }
+
+    samples_.assign(output, output + sample_count * channels);
+    free(output);
+
+    sample_rate_ = sample_rate;
+    channels_ = channels;
     Logger::Info("AudioPlayer: loaded " + path + " (" +
                  std::to_string(sample_rate_) + "Hz, " +
                  std::to_string(channels_) + "ch, " +

@@ -58,12 +58,14 @@ std::string DMClient::PostJSON(const std::string& path, const std::string& body)
     curl_slist_free_all(headers);
 
     if (res != CURLE_OK) {
+        last_http_code_ = 0;
         Logger::Warning("DMClient POST " + path + " failed: " + curl_easy_strerror(res));
         return "";
     }
 
     long http_code = 0;
     curl_easy_getinfo(curl_, CURLINFO_RESPONSE_CODE, &http_code);
+    last_http_code_ = static_cast<int>(http_code);
     if (http_code < 200 || http_code >= 300) {
         std::string detail = response;
         if (detail.size() > 200) detail = detail.substr(0, 200) + "...";

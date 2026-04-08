@@ -1,5 +1,6 @@
 #include "UIManager.hpp"
 #include "app/PDAController.hpp"
+#include "audio/AudioPlayer.hpp"
 #include "core/Config.hpp"
 #include "core/Logger.hpp"
 #include "net/DMClient.hpp"
@@ -68,7 +69,9 @@ void UIManager::RenderDMTab(PDAController& pda, Config& config) {
             Logger::Info("DM pair code created: " + code);
         } else {
             pair.state = PairState::FAILED;
-            pair.error = "Network error";
+            pair.error = (client.GetLastHttpCode() == 429)
+                ? "Rate limited (max 10 codes/day)"
+                : "Network error";
         }
     }
 
@@ -126,7 +129,9 @@ void UIManager::RenderDMTab(PDAController& pda, Config& config) {
                 }
             } else {
                 pair.state = PairState::FAILED;
-                pair.error = "Invalid code or expired";
+                pair.error = (client.GetLastHttpCode() == 429)
+                    ? "Rate limited (max 10 joins/5min)"
+                    : "Invalid code or expired";
             }
         }
     }
@@ -235,6 +240,31 @@ void UIManager::RenderDMTab(PDAController& pda, Config& config) {
     }
     ImGui::SameLine();
     ImGui::TextDisabled("(beep while scanning, error sound on failure)");
+
+    // Notification sound
+    bool dm_notify = config.GetState("dm.notify_sound", "1") == "1";
+    if (ImGui::Checkbox("New message sound", &dm_notify)) {
+        config.SetState("dm.notify_sound", dm_notify ? "1" : "0");
+    }
+    ImGui::SameLine();
+    ImGui::TextDisabled("(plays when a new DM arrives)");
+
+    // Volume slider
+    auto* notify_player = pda.GetDMNotifySound();
+    if (notify_player) {
+        float vol = notify_player->GetVolume();
+        if (ImGui::SliderFloat("Notification Volume", &vol, 0.0f, 1.0f, "%.2f")) {
+            notify_player->SetVolume(vol);
+            config.SetState("dm.notify_volume", std::to_string(vol));
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Test")) {
+            if (notify_player->IsLoaded() && !notify_player->IsPlaying()) {
+                notify_player->Play();
+            }
+        }
+        ImGui::TextDisabled("Replace assets/sounds/msgrcv.ogg with your own OGG file to customize.");
+    }
 
     // Diagnostics
     if (ImGui::CollapsingHeader("Diagnostics")) {

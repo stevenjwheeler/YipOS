@@ -17,6 +17,9 @@ public:
     // Load a WAV file (16-bit PCM, mono or stereo, any sample rate)
     bool LoadWAV(const std::string& path);
 
+    // Load an OGG Vorbis file (any sample rate, mono or stereo)
+    bool LoadOGG(const std::string& path);
+
     // Play the loaded WAV. If loop=true, repeats until Stop().
     void Play(bool loop = false);
 

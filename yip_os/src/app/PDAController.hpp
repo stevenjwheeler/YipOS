@@ -27,6 +27,7 @@ struct VRCAvatarEntry;
 class OSCManager;
 class ChatClient;
 struct ChatMessage;
+class AudioPlayer;
 class DMClient;
 class MediaController;
 class StockClient;
@@ -103,7 +104,7 @@ public:
     void ReloadStockSymbols();
 
     // Assets path (resolved from executable location by main.cpp)
-    void SetAssetsPath(const std::string& p) { assets_path_ = p; }
+    void SetAssetsPath(const std::string& p);
     const std::string& GetAssetsPath() const { return assets_path_; }
 
     // Display text (set from UIManager, read by TEXTScreen)
@@ -130,6 +131,7 @@ public:
     void MarkDMSeen();
     void SaveDMSessions();
     void LoadDMSessions();
+    AudioPlayer* GetDMNotifySound() { return dm_notify_sound_.get(); }
 
     // Twitch integration
     TwitchClient* GetTwitchClient() { return twitch_client_.get(); }
@@ -230,6 +232,8 @@ private:
     std::unique_ptr<TwitchClient> twitch_client_;
     const TwitchMessage* selected_twitch_ = nullptr;
     std::string assets_path_;
+    std::unique_ptr<AudioPlayer> dm_notify_sound_;
+    bool prev_has_unseen_dm_ = false;
     std::string display_text_;
 
     // Heart rate (updated from OSC recv thread)

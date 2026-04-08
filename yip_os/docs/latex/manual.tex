@@ -800,7 +800,7 @@ When VRCX has unseen notifications, an \texttt{*} appears next to the VRCX tile 
 \subsection{CC --- Closed Captions}
 \label{sec:cc}
 
-A locally running closed captions program powered by Georgi Gerganov's \textbf{whisper.cpp} (\url{https://github.com/ggml-org/whisper.cpp/}). It listens to your system audio or your selected microphone and displays live transcription on the CRT. This is one of the most visually intensive programs --- the status bar clock may be temporarily hidden to maximize refresh rate.
+A locally running closed captions program powered by Georgi Gerganov's \textbf{whisper.cpp} (\url{https://github.com/ggml-org/whisper.cpp/}). It listens to your system audio or your selected microphone and displays live transcription on the CRT. This is one of the most visually intensive programs --- the status bar clock will be hidden to maximize refresh rate.
 
 \manualfig[0.55\textwidth]{CC.png}{CC program displaying live transcription. Text scrolls upward as new speech is detected.}
 
@@ -1227,7 +1227,7 @@ From inside a conversation, tap \textbf{NEW} to open the compose screen. This us
   \item[SEND] Send the message. A brief ``Sent!'' confirmation appears before returning to the conversation.
 \end{description}
 
-\noindent Messages are limited to \textbf{280 characters} of printable ASCII text. Non-ASCII characters (Unicode, emoji, accented characters) are stripped by the server. This limit matches the display's character set --- only characters from the standard Character ROM (see Section~\ref{sec:charrom}) can be transmitted.
+\noindent Messages are limited to \textbf{280 characters} of printable ASCII text. Non-ASCII characters (Unicode, emoji, accented characters) are stripped by the server. This limit matches the display's character set --- only characters from the standard Character ROM (see Section~\ref{sec:charset}) can be transmitted.
 
 \begin{notebox}
   Composing messages requires CC to be configured first (see Section~\ref{sec:cc}). If no Whisper model is loaded, the compose screen will display a message directing you to CC~>~CONF.
@@ -1242,6 +1242,7 @@ Sessions can be managed in the \textbf{DM} tab of the desktop companion app:
   \item Delete individual sessions (client-side only --- see note below).
   \item Initiate pairing via manual code entry (alternative to QR scanning).
   \item Set your screen name.
+  \item \textbf{Notification sound:} A sound effect plays when a new unread DM is detected (including on application launch). A checkbox enables or disables the sound, and a volume slider and \textbf{Test} button let you preview the level. The sound file is \texttt{assets/sounds/msgrcv.ogg} --- you can replace it with any OGG~Vorbis file of your choosing.
 \end{itemize}
 
 \subsubsection{Privacy and Data}
@@ -1267,7 +1268,7 @@ Sessions can be managed in the \textbf{DM} tab of the desktop companion app:
   \item \textbf{100 messages sent per session per 24~hours}.
 \end{itemize}
 
-\noindent Pairing codes themselves expire \textbf{5~minutes} after creation. If you hit a rate limit you will see an error message --- wait for the window to reset, then try again.
+\noindent Pairing codes themselves expire \textbf{5~minutes} after creation. If you hit a rate limit, the PDA will display ``Rate limited'' and the desktop app will show the specific cap (e.g., ``Rate limited (max 10 codes/day)''). Wait for the window to reset, then try again.
 
 Messages are stored in Cloudflare's KV cache for 30 days and then automatically purged. Message contents are anonymized by a random UUID but are associated with the screen name you set at pairing time. Any user can set any screen name --- if you pair with ``USER~A'' but they've set their screen name to some other VRChat username ``USER~B'', it is up to you to understand and remember that you're communicating with ``USER~A''. (If they change their name after pairing, you'll still see their old screen name.)
 
