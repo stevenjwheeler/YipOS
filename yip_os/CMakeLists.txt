@@ -148,7 +148,9 @@ set(YIPOS_SOURCES
     src/screens/DMPairScreen.cpp
     src/screens/DMComposeScreen.cpp
     src/screens/DMMessageScreen.cpp
+    src/screens/OpenShockScreen.cpp
     src/net/DMClient.cpp
+    src/net/OpenShockClient.cpp
     src/img/QRGen.cpp
     src/translate/TranslationWorker.cpp
     src/img/VQEncoder.cpp
@@ -164,6 +166,7 @@ set(YIPOS_SOURCES
     src/ui/UIManager_Data.cpp
     src/ui/UIManager_Config.cpp
     src/ui/UIManager_DM.cpp
+    src/ui/UIManager_OpenShock.cpp
 )
 
 # Platform-specific sources
