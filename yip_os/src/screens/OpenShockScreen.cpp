@@ -45,13 +45,24 @@ void OpenShockScreen::RenderContent() {
     display_.WriteText(25, 6, " [ EXECUTE ] ", true);
   }
 
+  auto *client = pda_.GetOpenShockClient();
+  bool available = client && client->HasToken() && !client->GetShockers().empty();
+
   // Intensity Value
   char buf[16];
-  std::snprintf(buf, sizeof(buf), "%3.0f%%", intensity_);
+  if (available) {
+    std::snprintf(buf, sizeof(buf), "%3.0f%%", intensity_);
+  } else {
+    std::snprintf(buf, sizeof(buf), "  -  ");
+  }
   display_.WriteText(8, 4, buf);
 
   // Duration Value
-  std::snprintf(buf, sizeof(buf), "%1.1fs", duration_ms_ / 1000.0f);
+  if (available) {
+    std::snprintf(buf, sizeof(buf), "%1.1fs", duration_ms_ / 1000.0f);
+  } else {
+    std::snprintf(buf, sizeof(buf), "  -  ");
+  }
   display_.WriteText(28, 4, buf, false);
 }
 
