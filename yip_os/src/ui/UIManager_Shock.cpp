@@ -24,13 +24,13 @@ namespace YipOS {
 void UIManager::RenderShockTab(PDAController &pda, Config &config) {
   ImGui::Text("Shocker Integration");
   ImGui::TextDisabled(
-      "Drive your PiShock & OpenShock devices directly from the Yip-Boi.");
+      "Drive your PiShock & OpenShock devices directly from the PDA.");
   ImGui::Spacing();
 
   ImGui::TextDisabled("Warning: Using shocking devices is at your own risk.");
   ImGui::TextDisabled("Use responsibly and follow all safety guidelines.");
   ImGui::TextDisabled(
-      "Remember: If other people can interact with your yip-boi, they can "
+      "Remember: If other people can interact with your PDA, they can "
       "control your shocks.");
 
   ImGui::Separator();
@@ -65,12 +65,12 @@ void UIManager::RenderShockTab(PDAController &pda, Config &config) {
     std::snprintf(pishock_apikey_buf_.data(), pishock_apikey_buf_.size(), "%s",
                   ps_api.c_str());
 
-    std::string i_step = config.GetState("openshock.intensity_step", "2.5");
+    std::string i_step = config.GetState("shock.intensity_step", "2.5");
     try {
       openshock_intensity_step_ = std::stof(i_step);
     } catch (...) {
     }
-    std::string d_step = config.GetState("openshock.duration_step", "1000");
+    std::string d_step = config.GetState("shock.duration_step", "1000");
     try {
       openshock_duration_step_ = std::stoi(d_step);
     } catch (...) {
@@ -181,9 +181,9 @@ void UIManager::RenderShockTab(PDAController &pda, Config &config) {
 
     config.SetState("openshock.enabled", openshock_enabled_ ? "1" : "0");
     config.SetState("openshock.token", os_token);
-    config.SetState("openshock.intensity_step",
+    config.SetState("shock.intensity_step",
                     std::to_string(openshock_intensity_step_));
-    config.SetState("openshock.duration_step",
+    config.SetState("shock.duration_step",
                     std::to_string(openshock_duration_step_));
 
     config.SetState("pishock.enabled", pishock_enabled_ ? "1" : "0");
@@ -216,6 +216,12 @@ void UIManager::RenderShockTab(PDAController &pda, Config &config) {
       Logger::Warning("ShockManager: No shockers available to test.");
     }
   }
+
+  // --- Footer ---
+  ImGui::Spacing();
+  ImGui::Separator();
+  ImGui::Spacing();
+  ImGui::TextDisabled("Module by @otter_oasis");
 }
 
 } // namespace YipOS

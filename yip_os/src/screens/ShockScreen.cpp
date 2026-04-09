@@ -176,11 +176,11 @@ bool ShockScreen::OnInput(const std::string &key) {
       float i_step = 2.5f;
       int d_step = 1000;
       try {
-        i_step = std::stof(config.GetState("openshock.intensity_step", "2.5"));
+        i_step = std::stof(config.GetState("shock.intensity_step", "2.5"));
       } catch (...) {
       }
       try {
-        d_step = std::stoi(config.GetState("openshock.duration_step", "1000"));
+        d_step = std::stoi(config.GetState("shock.duration_step", "1000"));
       } catch (...) {
       }
 

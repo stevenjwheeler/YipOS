@@ -133,7 +133,6 @@ void OpenShockClient::SetToken(const std::string &token) {
   if (token_ != token) {
     token_ = token;
     token_valid_ = false;
-    Logger::Info("OpenShockClient: Token updated");
   }
 }
 
