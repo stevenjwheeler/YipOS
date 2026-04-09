@@ -1,21 +1,19 @@
 /**
- * OpenShockScreen.cpp
+ * ShockScreen.cpp
  * V1.0.0
  *
- * Adds OpenShock API integration to YipOS for remote control of OpenShock
- * devices.
+ * Screen for controlling multiple shock devices via the ShockManager interface.
  *
  * By otter_oasis
  */
 
-#include "OpenShockScreen.hpp"
+#include "ShockScreen.hpp"
 #include "app/PDAController.hpp"
 #include "app/PDADisplay.hpp"
 #include "core/Config.hpp"
 #include "core/Glyphs.hpp"
-#include "core/Logger.hpp"
 #include "core/TimeUtil.hpp"
-#include "net/OpenShockClient.hpp"
+#include "net/ShockManager.hpp"
 #include <algorithm>
 #include <cstdio>
 
@@ -23,18 +21,18 @@ namespace YipOS {
 
 using namespace Glyphs;
 
-OpenShockScreen::OpenShockScreen(PDAController &pda) : Screen(pda) {
+ShockScreen::ShockScreen(PDAController &pda) : Screen(pda) {
   name = "SHOCK";
   macro_index = 48; // OPENSHOCK macro
 }
 
-void OpenShockScreen::Render() {
+void ShockScreen::Render() {
   // The OPENSHOCK title and layout is baked into the macro texture
   RenderContent();
   RenderStatusBar();
 }
 
-void OpenShockScreen::RenderContent() {
+void ShockScreen::RenderContent() {
   RenderShockerSelection();
   RenderModeSelection();
 
@@ -45,8 +43,9 @@ void OpenShockScreen::RenderContent() {
     display_.WriteText(25, 6, " [ EXECUTE ] ", true);
   }
 
-  auto *client = pda_.GetOpenShockClient();
-  bool available = client && client->HasToken() && !client->GetShockers().empty();
+  auto *manager = pda_.GetShockManager();
+  bool available =
+      manager && manager->HasAnyConfig() && !manager->GetShockers().empty();
 
   // Intensity Value
   char buf[16];
@@ -66,7 +65,7 @@ void OpenShockScreen::RenderContent() {
   display_.WriteText(28, 4, buf, false);
 }
 
-void OpenShockScreen::RenderDynamic() {
+void ShockScreen::RenderDynamic() {
   if (show_success_flash_ && MonotonicNow() > flash_end_time_) {
     show_success_flash_ = false;
   }
@@ -76,18 +75,18 @@ void OpenShockScreen::RenderDynamic() {
   RenderCursor();
 }
 
-void OpenShockScreen::RenderShockerSelection() {
-  auto *client = pda_.GetOpenShockClient();
-  if (!client)
+void ShockScreen::RenderShockerSelection() {
+  auto *manager = pda_.GetShockManager();
+  if (!manager)
     return;
 
-  if (!client->HasToken()) {
+  if (!manager->HasAnyConfig()) {
     display_.WriteText(8, 1, "SETUP IN APP");
     return;
   }
 
-  const auto &items = client->GetShockers();
-  std::string label = "NO DEVICES OR BAD TOKEN";
+  const auto &items = manager->GetShockers();
+  std::string label = "NO DEVICES OR BAD AUTH";
   if (!items.empty()) {
     if (selected_shocker_idx_ >= static_cast<int>(items.size())) {
       selected_shocker_idx_ = 0;
@@ -105,25 +104,23 @@ void OpenShockScreen::RenderShockerSelection() {
   display_.WriteText(8, 1, padded);
 }
 
-void OpenShockScreen::RenderModeSelection() {
-  auto *client = pda_.GetOpenShockClient();
+void ShockScreen::RenderModeSelection() {
+  auto *manager = pda_.GetShockManager();
 
   // Status indicator at Column 0 (to the left of ACTIVE MODE label) on Row 3
   std::string status = "- ";
-  if (client) {
-    if (client->HasToken()) {
-      status = client->IsTokenValid() ? "  " : "! ";
-    }
+  if (manager && manager->HasAnyConfig()) {
+    status = manager->IsHealthy() ? "  " : "! ";
   }
   display_.WriteText(2, 1, status);
 
   std::string val =
-      (!client || !client->HasToken() || client->GetShockers().empty())
+      (!manager || !manager->HasAnyConfig() || manager->GetShockers().empty())
           ? "UNAVAILABLE"
           : MODES[mode_idx_];
 
   // Add hazard markers if in SHOCK mode
-  if (mode_idx_ == 0 && client && client->HasToken()) {
+  if (mode_idx_ == 0 && manager && manager->HasAnyConfig()) {
     val = "!!" + std::string(MODES[0]) + "!!";
   }
 
@@ -137,7 +134,7 @@ void OpenShockScreen::RenderModeSelection() {
   display_.WriteText(17, 3, val);
 }
 
-bool OpenShockScreen::OnInput(const std::string &key) {
+bool ShockScreen::OnInput(const std::string &key) {
   if (key == "TL") {
     pda_.PopScreen();
     return true;
@@ -148,22 +145,32 @@ bool OpenShockScreen::OnInput(const std::string &key) {
     int tx = key[0] - '1';
     int ty = key[1] - '1';
 
-    auto *client = pda_.GetOpenShockClient();
+    auto *manager = pda_.GetShockManager();
     auto &config = pda_.GetConfig();
     bool changed = false;
 
-    if (ty == 0) {   // Top Row: Devices (Unchanged)
+    if (ty == 0) { // Top Row: Devices (Unchanged)
+      bool device_changed = false;
       if (tx == 0) { // Previous
         if (selected_shocker_idx_ > 0) {
           selected_shocker_idx_--;
           changed = true;
+          device_changed = true;
         }
       } else if (tx == 4) { // Next
-        if (client && selected_shocker_idx_ <
-                          static_cast<int>(client->GetShockers().size()) - 1) {
+        if (manager &&
+            selected_shocker_idx_ <
+                static_cast<int>(manager->GetShockers().size()) - 1) {
           selected_shocker_idx_++;
           changed = true;
+          device_changed = true;
         }
+      }
+      if (device_changed && manager && !manager->GetShockers().empty()) {
+        const auto &s = manager->GetShockers()[selected_shocker_idx_];
+        int min_d = manager->GetMinDurationMs(s.backend);
+        int max_d = manager->GetMaxDurationMs(s.backend);
+        duration_ms_ = std::clamp(duration_ms_, min_d, max_d);
       }
     } else if (ty == 1) { // Middle Row: Intensity (Left) & Duration (Right)
       float i_step = 2.5f;
@@ -183,11 +190,19 @@ bool OpenShockScreen::OnInput(const std::string &key) {
       } else if (tx == 2) { // Int Up
         intensity_ = std::min(100.0f, intensity_ + i_step);
         changed = true;
-      } else if (tx == 3) { // Dur Down
-        duration_ms_ = std::max(100, duration_ms_ - d_step);
-        changed = true;
-      } else if (tx == 4) { // Dur Up
-        duration_ms_ = std::min(30000, duration_ms_ + d_step);
+      } else if (tx == 3 || tx == 4) { // Duration Down/Up
+        int min_d = 100;
+        int max_d = 30000;
+        if (manager && !manager->GetShockers().empty()) {
+          const auto &s = manager->GetShockers()[selected_shocker_idx_];
+          min_d = manager->GetMinDurationMs(s.backend);
+          max_d = manager->GetMaxDurationMs(s.backend);
+        }
+        if (tx == 3) {
+          duration_ms_ = std::max(min_d, duration_ms_ - d_step);
+        } else {
+          duration_ms_ = std::min(max_d, duration_ms_ + d_step);
+        }
         changed = true;
       }
     } else if (ty == 2) { // Bottom Row: Mode Cycle (Left) & Execute (Right)
@@ -195,9 +210,10 @@ bool OpenShockScreen::OnInput(const std::string &key) {
         mode_idx_ = (mode_idx_ + 1) % 3;
         changed = true;
       } else if (tx >= 3) { // EXECUTE (tx 3-4)
-        if (client && !client->GetShockers().empty()) {
-          const auto &s = client->GetShockers()[selected_shocker_idx_];
-          client->SendControl(s.id, MODES[mode_idx_], intensity_, duration_ms_);
+        if (manager && !manager->GetShockers().empty()) {
+          const auto &s = manager->GetShockers()[selected_shocker_idx_];
+          manager->SendControl(s.id, s.backend, MODES[mode_idx_], intensity_,
+                               duration_ms_);
           show_success_flash_ = true;
           flash_end_time_ = MonotonicNow() + 2.0;
           changed = true;
@@ -215,12 +231,12 @@ bool OpenShockScreen::OnInput(const std::string &key) {
   return false;
 }
 
-void OpenShockScreen::Update() {
+void ShockScreen::Update() {
   static double last_fetch = 0;
-  if (MonotonicNow() - last_fetch > 60.0) {
-    if (auto *client = pda_.GetOpenShockClient()) {
-      client->FetchShockers();
-    }
+  if (MonotonicNow() - last_fetch > 30.0) {
+    auto *manager = pda_.GetShockManager();
+    if (manager)
+      manager->FetchShockers();
     last_fetch = MonotonicNow();
   }
 }
