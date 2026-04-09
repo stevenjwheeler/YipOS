@@ -1,9 +1,8 @@
 /**
- * OpenShockScreen.cpp
+ * ShockScreen.cpp
  * V1.0.0
  *
- * Adds OpenShock API integration to YipOS for remote control of OpenShock
- * devices.
+ * Screen for controlling multiple shock devices via the ShockManager interface.
  *
  * By otter_oasis
  */
@@ -14,9 +13,9 @@
 
 namespace YipOS {
 
-class OpenShockScreen : public Screen {
+class ShockScreen : public Screen {
 public:
-  OpenShockScreen(PDAController &pda);
+  ShockScreen(PDAController &pda);
 
   void Render() override;
   void RenderContent() override;

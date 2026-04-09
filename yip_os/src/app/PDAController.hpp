@@ -34,7 +34,7 @@ class StockClient;
 class TwitchClient;
 struct TwitchMessage;
 class TranslationWorker;
-class OpenShockClient;
+class ShockManager;
 
 class PDAController {
 public:
@@ -142,8 +142,8 @@ public:
     void RefreshChatCache();
     void MarkChatSeen();
 
-    // OpenShock integration
-    OpenShockClient* GetOpenShockClient() { return openshock_client_.get(); }
+    // OpenShock & PiShock integration
+    ShockManager* GetShockManager() { return shock_manager_.get(); }
 
     // Hard lock (full LOCK screen from home tile)
     void SetLocked(bool locked);
@@ -235,7 +235,7 @@ private:
     std::unique_ptr<StockClient> stock_client_;
     std::unique_ptr<TwitchClient> twitch_client_;
     const TwitchMessage* selected_twitch_ = nullptr;
-    std::unique_ptr<OpenShockClient> openshock_client_;
+    std::unique_ptr<ShockManager> shock_manager_;
     std::string assets_path_;
     std::unique_ptr<AudioPlayer> dm_notify_sound_;
     bool prev_has_unseen_dm_ = false;

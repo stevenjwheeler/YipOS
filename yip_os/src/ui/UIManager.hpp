@@ -112,12 +112,16 @@ private:
     std::array<char, 8> dm_join_code_buf_ = {};
     std::unordered_map<std::string, std::array<char, 256>> dm_compose_bufs_;
 
-    // OpenShock tab state
+    // Shock tab state (OpenShock & PiShock)
     bool openshock_enabled_ = false;
     std::array<char, 128> openshock_token_buf_ = {};
     bool openshock_token_initialized_ = false;
     float openshock_intensity_step_ = 2.5f;
     int openshock_duration_step_ = 100;
+    bool pishock_enabled_ = false;
+    std::array<char, 64> pishock_username_buf_ = {};
+    std::array<char, 128> pishock_apikey_buf_ = {};
+    bool pishock_initialized_ = false;
 
     // OSC Query server (optional, for status display)
     OSCQueryServer* osc_query_ = nullptr;
