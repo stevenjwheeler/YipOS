@@ -806,9 +806,9 @@ def layout_dm_compose(buf):
     buf.put_status_bar()
 
 
-def layout_openshock(buf):
-    """OpenShock control screen: frame + labels + Execute button."""
-    buf.put_frame("OPENSHOCK")
+def layout_shock(buf):
+    """Shock control screen: frame + labels + Execute button."""
+    buf.put_frame("SHOCK")
     
     # Row 1 (ty=0): Shocker Selection
     buf.put_text(3, 1, " < ", inverted=True) # tx=0
@@ -941,7 +941,7 @@ SCREEN_LAYOUTS = {
     45: ("PAIR OK", layout_dm_pair_complete),
     46: ("PAIR FAIL", layout_dm_pair_failed),
     47: ("PAIR JOIN", layout_dm_pair_joined),
-    48: ("OPENSHOCK", layout_openshock),
+    48: ("SHOCK", layout_shock),
 }
 
 
