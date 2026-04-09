@@ -36,21 +36,26 @@ OpenShockClient::~OpenShockClient() {
 }
 
 bool OpenShockClient::FetchShockers() {
-  if (!HasToken()) {
+  if (!enabled_ || !HasConfig()) {
+    Logger::Debug("OpenShockClient: Skipping fetch (disabled or no token)");
     shockers_.clear();
     return true;
   }
 
+  Logger::Info("OpenShockClient: Fetching shockers");
+  Logger::Info("OpenShockClient: Authenticating with Token");
   shockers_.clear();
   std::string response;
 
   // Fetch owned shockers
+  Logger::Info("OpenShockClient: Requesting own devices");
   if (PerformGet(std::string(API_BASE) + "/1/shockers/own", response)) {
     ParseShockers(response, true);
   }
 
   // Fetch shared shockers
   response.clear();
+  Logger::Info("OpenShockClient: Requesting shared devices");
   if (PerformGet(std::string(API_BASE) + "/1/shockers/shared", response)) {
     ParseShockers(response, false);
   }
@@ -79,6 +84,7 @@ bool OpenShockClient::ParseShockers(const std::string &json_str,
                                          : "Shocker";
           s.name = "[" + hub_name + "] " + shocker_name;
           s.is_owned = is_owned;
+          s.backend = "openshock";
           shockers_.push_back(s);
         }
       }
@@ -94,7 +100,7 @@ bool OpenShockClient::ParseShockers(const std::string &json_str,
 bool OpenShockClient::SendControl(const std::string &shocker_id,
                                   const std::string &type, float intensity,
                                   int duration_ms) {
-  if (!HasToken()) {
+  if (!HasConfig()) {
     return false;
   }
 
@@ -126,7 +132,8 @@ bool OpenShockClient::SendControl(const std::string &shocker_id,
 void OpenShockClient::SetToken(const std::string &token) {
   if (token_ != token) {
     token_ = token;
-    token_valid_ = false; // Reset validity when token changes
+    token_valid_ = false;
+    Logger::Info("OpenShockClient: Token updated");
   }
 }
 
@@ -206,6 +213,8 @@ bool OpenShockClient::PerformPost(const std::string &url,
 
   if (http_code >= 200 && http_code < 300) {
     token_valid_ = true;
+    Logger::Info("OpenShockClient: Command sent successfully (HTTP " +
+                 std::to_string(http_code) + ")");
   } else {
     if (http_code == 401)
       token_valid_ = false;
