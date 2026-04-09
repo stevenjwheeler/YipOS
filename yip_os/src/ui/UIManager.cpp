@@ -197,7 +197,7 @@ void UIManager::Render(PDAController& pda, Config& config, OSCManager& osc) {
     {
         static const char* tab_labels[] = {
             "Status", "OSC", "Display", "VRCX", "CC", "INTRP", "Avatar",
-            "Text", "IMG", "Stocks", "Twitch", "DM", "OpenShock", "NVRAM", "Log"
+            "Text", "IMG", "Stocks", "Twitch", "DM", "Shock", "NVRAM", "Log"
         };
         static constexpr int TAB_COUNT = 15;
         static constexpr int ROW1_COUNT = 7;
