@@ -57,7 +57,7 @@ private:
     void RenderTwitchTab(PDAController& pda, Config& config);
     void RenderIMGTab(PDAController& pda, Config& config);
     void RenderDMTab(PDAController& pda, Config& config);
-    void RenderOpenShockTab(PDAController& pda, Config& config);
+    void RenderShockTab(PDAController& pda, Config& config);
     void RenderNVRAMTab(PDAController& pda, Config& config);
     void RenderLogTab();
 

@@ -243,7 +243,7 @@ void UIManager::Render(PDAController& pda, Config& config, OSCManager& osc) {
         case 9:  RenderStocksTab(pda, config); break;
         case 10: RenderTwitchTab(pda, config); break;
         case 11: RenderDMTab(pda, config); break;
-        case 12: RenderOpenShockTab(pda, config); break;
+        case 12: RenderShockTab(pda, config); break;
         case 13: RenderNVRAMTab(pda, config); break;
         case 14: RenderLogTab(); break;
         }

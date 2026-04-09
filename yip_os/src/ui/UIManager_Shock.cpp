@@ -21,7 +21,7 @@
 
 namespace YipOS {
 
-void UIManager::RenderOpenShockTab(PDAController &pda, Config &config) {
+void UIManager::RenderShockTab(PDAController &pda, Config &config) {
   ImGui::Text("Shocker Integration");
   ImGui::TextDisabled(
       "Drive your PiShock & OpenShock devices directly from the Yip-Boi.");
