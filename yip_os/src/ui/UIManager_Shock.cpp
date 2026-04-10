@@ -67,12 +67,12 @@ void UIManager::RenderShockTab(PDAController &pda, Config &config) {
 
     std::string i_step = config.GetState("shock.intensity_step", "2.5");
     try {
-      openshock_intensity_step_ = std::stof(i_step);
+      shock_intensity_step_ = std::stof(i_step);
     } catch (...) {
     }
     std::string d_step = config.GetState("shock.duration_step", "1000");
     try {
-      openshock_duration_step_ = std::stoi(d_step);
+      shock_duration_step_ = std::stoi(d_step);
     } catch (...) {
     }
 
@@ -149,10 +149,10 @@ void UIManager::RenderShockTab(PDAController &pda, Config &config) {
   ImGui::TextDisabled(
       "Step sizes used by wrist buttons for all shock devices.");
   ImGui::SetNextItemWidth(150);
-  ImGui::InputFloat("Intensity Step (%)", &openshock_intensity_step_, 0.5f,
+  ImGui::InputFloat("Intensity Step (%)", &shock_intensity_step_, 0.5f,
                     5.0f, "%.1f");
   ImGui::SetNextItemWidth(150);
-  ImGui::InputInt("Duration Step (ms)", &openshock_duration_step_, 100, 1000);
+  ImGui::InputInt("Duration Step (ms)", &shock_duration_step_, 100, 1000);
 
   ImGui::Spacing();
   ImGui::Separator();
@@ -182,9 +182,9 @@ void UIManager::RenderShockTab(PDAController &pda, Config &config) {
     config.SetState("openshock.enabled", openshock_enabled_ ? "1" : "0");
     config.SetState("openshock.token", os_token);
     config.SetState("shock.intensity_step",
-                    std::to_string(openshock_intensity_step_));
+                    std::to_string(shock_intensity_step_));
     config.SetState("shock.duration_step",
-                    std::to_string(openshock_duration_step_));
+                    std::to_string(shock_duration_step_));
 
     config.SetState("pishock.enabled", pishock_enabled_ ? "1" : "0");
     config.SetState("pishock.username", ps_user);
